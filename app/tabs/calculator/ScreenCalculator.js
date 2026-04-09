@@ -1,9 +1,9 @@
 import { StyleSheet, Text, View } from 'react-native'
 
-export default function ScreenAbout() {
+export default function ScreenCalculator() {
   return (
     <View>
-      <Text>ScreenAbout</Text>
+      <Text>ScreenCalculator</Text>
     </View>
   )
 }
