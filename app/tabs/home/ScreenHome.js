@@ -1,7 +1,13 @@
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { signOut } from "firebase/auth";
 import React from "react";
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Switch } from "react-native-paper";
+import { auth } from "../../../firebase.config";
+
+const handleLogout = async () => {
+  await signOut(auth);
+};
 
 const MyComponent = () => {
   const [isSwitchOn, setIsSwitchOn] = React.useState(false);
@@ -90,7 +96,7 @@ export default function ProfileScreen() {
           <Text style={styles.rowSubtitle}>Estimated readiness: 84%</Text>
         </View>
 
-        <TouchableOpacity style={styles.logoutBtn}>
+        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
           <Ionicons name="log-out" size={20} color="#ff716c" />
           <Text style={styles.logoutText}>Sign Out Session</Text>
         </TouchableOpacity>

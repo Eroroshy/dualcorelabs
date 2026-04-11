@@ -1,7 +1,16 @@
 {
   "expo": {
     "name": "legendlore",
-    "slug": "legendlore",
-    "version": "1.0.0"
+    "slug": "kinetic",
+    "version": "1.0.0",
+    "extra": {
+      "eas": {
+        "projectId": "a41e1e8a-505d-42de-b1e2-0d44754e7855"
+      }
+    },
+    "owner": "dream-team-international-system-entertainment",
+    "android": {
+      "package": "com.dreamteaminternationalsystementertainment.kinetic"
+    }
   }
 }
