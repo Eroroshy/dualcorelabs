@@ -1,8 +1,12 @@
-import { signInWithEmailAndPassword } from "firebase/auth";
-import React, { useState } from "react";
+import React, {
+    useContext,
+    useState
+} from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { TextInput } from "react-native-paper";
-import { auth } from "../../../firebase.config";
+
+import { API_URL } from "../../config/api";
+import { AuthContext } from "../../context/AuthContext";
 
 export default function LoginScreen({ navigation }) {
 
@@ -10,17 +14,52 @@ export default function LoginScreen({ navigation }) {
     const [password, setPassword] = useState("");
     const [isSecure, setIsSecure] = useState(true);
 
+    const {
+        login
+    } = useContext(AuthContext);
+
     const handleLogin = async () => {
-        if (!email || !password) {
-            Alert.alert("Error", "Fill all fields");
-            return;
-        }
 
         try {
-            await signInWithEmailAndPassword(auth, email, password);
+
+            const response =
+                await fetch(
+                    `${API_URL}/auth/login`,
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            email,
+                            password
+                        })
+                    }
+                );
+
+            const data =
+                await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data.message
+                );
+            }
+
+            await login(
+                data.user,
+                data.token
+            );
+
         } catch (error) {
-            Alert.alert("Login error", error.message);
+
+            Alert.alert(
+                "Login Error",
+                error.message
+            );
+
         }
+
     };
 
     return (

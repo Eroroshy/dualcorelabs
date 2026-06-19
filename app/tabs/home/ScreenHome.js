@@ -1,13 +1,10 @@
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import { signOut } from "firebase/auth";
-import React from "react";
+import { useNavigation } from "@react-navigation/native";
+import React, { useContext } from "react";
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Switch } from "react-native-paper";
-import { auth } from "../../../firebase.config";
 
-const handleLogout = async () => {
-  await signOut(auth);
-};
+import { AuthContext } from "../../context/AuthContext";
 
 const MyComponent = () => {
   const [isSwitchOn, setIsSwitchOn] = React.useState(false);
@@ -17,8 +14,15 @@ const MyComponent = () => {
   return <Switch value={isSwitchOn} onValueChange={onToggleSwitch} />;
 };
 
-
 export default function ProfileScreen() {
+  const navigation = useNavigation();
+  const { user, logout } = useContext(AuthContext);
+  const profile = user?.profile;
+
+  const avatarSource = profile?.foto_url
+    ? { uri: profile.foto_url }
+    : { uri: "https://www.mensfitness.com/.image/w_2560,q_auto:good,c_fill,ar_4:3/MjA3ODczMTcwMzk5NTY5MjE2/terry-crews.jpg?arena_f_auto" };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -27,29 +31,40 @@ export default function ProfileScreen() {
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.profileSection}>
-          <Image
-            source={{ uri: "https://www.mensfitness.com/.image/w_2560,q_auto:good,c_fill,ar_4:3/MjA3ODczMTcwMzk5NTY5MjE2/terry-crews.jpg?arena_f_auto" }}
-            style={styles.avatar}
-          />
+          <Image source={avatarSource} style={styles.avatar} />
           <View style={styles.rankBadge}>
-            <Text style={styles.rankText}>RANK: ELITE</Text>
+            <Text style={styles.rankText}>{profile?.nivel_experiencia?.toUpperCase() || "PRINCIPIANTE"}</Text>
           </View>
         </View>
 
         <Text style={styles.label}>Active Profile</Text>
-        <Text style={styles.name}>Terry Crews</Text>
+        <Text style={styles.name}>{user?.nombre || "Usuario"}</Text>
 
         <View style={styles.statsRow}>
           <View style={styles.statBlock}>
-            <Text style={styles.statValue}>248</Text>
-            <Text style={styles.statLabel}>Workouts</Text>
+            <Text style={styles.statValue}>{profile?.edad ?? "--"}</Text>
+            <Text style={styles.statLabel}>Edad</Text>
           </View>
 
           <View style={styles.divider} />
 
           <View style={styles.statBlock}>
-            <Text style={styles.statValue}>14.2k</Text>
-            <Text style={styles.statLabel}>Volume / Tons</Text>
+            <Text style={styles.statValue}>{profile?.peso_kg ? `${profile.peso_kg}kg` : "--"}</Text>
+            <Text style={styles.statLabel}>Peso</Text>
+          </View>
+        </View>
+
+        <View style={styles.statsRow}>
+          <View style={styles.statBlock}>
+            <Text style={styles.statValue}>{profile?.altura_cm ? `${profile.altura_cm}cm` : "--"}</Text>
+            <Text style={styles.statLabel}>Altura</Text>
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.statBlock}>
+            <Text style={styles.statValue}>{profile?.objetivo || "-"}</Text>
+            <Text style={styles.statLabel}>Objetivo</Text>
           </View>
         </View>
 
@@ -64,7 +79,7 @@ export default function ProfileScreen() {
                 <Text style={styles.rowSubtitle}>Alerts for milestones</Text>
               </View>
             </View>
-            <MyComponent style={styles.toggle}/>
+            <MyComponent style={styles.toggle} />
           </View>
 
           <TouchableOpacity style={styles.row}>
@@ -78,12 +93,12 @@ export default function ProfileScreen() {
             <Ionicons name="chevron-forward" size={20} color="#747578" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.row}>
+          <TouchableOpacity style={styles.row} onPress={() => navigation.navigate("Editar Perfil")}>
             <View style={styles.rowLeft}>
               <MaterialIcons name="lock" size={24} color="#88adff" />
               <View>
-                <Text style={styles.rowTitle}>Privacy & Security</Text>
-                <Text style={styles.rowSubtitle}>Biometric lock</Text>
+                <Text style={styles.rowTitle}>Editar perfil</Text>
+                <Text style={styles.rowSubtitle}>Modificar información personal</Text>
               </View>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#747578" />
@@ -92,11 +107,11 @@ export default function ProfileScreen() {
 
         <View style={styles.card}>
           <Text style={styles.smallLabel}>Training Status</Text>
-          <Text style={styles.status}>In Recovery</Text>
-          <Text style={styles.rowSubtitle}>Estimated readiness: 84%</Text>
+          <Text style={styles.status}>{profile?.nivel_experiencia ? `Nivel ${profile.nivel_experiencia}` : "Status desconocido"}</Text>
+          <Text style={styles.rowSubtitle}>{profile?.objetivo ? `Objetivo: ${profile.objetivo}` : "No hay objetivo definido"}</Text>
         </View>
 
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+        <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
           <Ionicons name="log-out" size={20} color="#ff716c" />
           <Text style={styles.logoutText}>Sign Out Session</Text>
         </TouchableOpacity>

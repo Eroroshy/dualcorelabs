@@ -1,9 +1,8 @@
-import { createUserWithEmailAndPassword } from "firebase/auth";
 import React, { useState } from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { TextInput } from "react-native-paper";
-import { auth } from "../../../firebase.config";
 
+import { API_URL } from "../../config/api";
 
 export default function RegisterScreen({ navigation }) {
 
@@ -12,17 +11,52 @@ export default function RegisterScreen({ navigation }) {
     const [isSecure, setIsSecure] = useState(true);
 
     const handleRegister = async () => {
-        if (!email || !password) {
-            Alert.alert("Error", "Fill all fields");
-            return;
+
+    try {
+
+        const response =
+        await fetch(
+            `${API_URL}/auth/register`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type":
+                    "application/json"
+                },
+                body: JSON.stringify({
+                    nombre: email.split("@")[0],
+                    email,
+                    password
+                })
+            }
+        );
+
+        const data =
+        await response.json();
+
+        if(!response.ok){
+            throw new Error(
+                data.message
+            );
         }
 
-        try {
-            await createUserWithEmailAndPassword(auth, email, password);
-        } catch (error) {
-            Alert.alert("Register error", error.message);
-        }
-    };
+        Alert.alert(
+            "Success",
+            "User registered"
+        );
+
+        navigation.goBack();
+
+    } catch(error){
+
+        Alert.alert(
+            "Error",
+            error.message
+        );
+
+    }
+
+};
 
     return (
         <View style={styles.container}>

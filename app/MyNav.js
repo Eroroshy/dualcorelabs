@@ -44,7 +44,7 @@ function AppStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Tabs" component={AppTabs} />
-      <Stack.Screen name="EditProfile" component={ScreenEditProfile} />
+      <Stack.Screen name="Editar Perfil" component={ScreenEditProfile} options={{headerShown:true}}/>
       <Stack.Screen name="Más Detalles" component={DetailLibrary} />
     </Stack.Navigator>
   );
@@ -98,19 +98,15 @@ function AppTabs() {
 }
 
 //
-// 📚 STACK LIBRARY
-//
 function StackExercises() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Library" component={ScreenLibrary} />
-      <Stack.Screen name="Más Detalles" component={DetailLibrary} />
+      <Stack.Screen name="Más Detalles" component={DetailLibrary} options={{headerShown:true}} />
     </Stack.Navigator>
   );
 }
 
-//
-// 🎨 ESTILOS
 //
 const styles = StyleSheet.create({
   nav: {
