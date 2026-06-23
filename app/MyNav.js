@@ -15,6 +15,7 @@ import ScreenLibrary from "./tabs/library/ScreenLibrary";
 import ScreenEditProfile from "./tabs/account/ScreenEditProfile";
 import ScreenLogin from "./tabs/account/ScreenLogin";
 import ScreenSignUp from "./tabs/account/ScreenSignUp";
+import ScreenGym from "./tabs/gym/ScreenGym";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -22,7 +23,7 @@ const Stack = createStackNavigator();
 export function MyNavigation() {
   const { user } = useContext(AuthContext);
 
-  return user ? <AppStack /> : <AuthStack />;
+  return <AppStack />;
 }
 
 //
@@ -33,6 +34,7 @@ function AuthStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Login" component={ScreenLogin} />
       <Stack.Screen name="Register" component={ScreenSignUp} />
+
     </Stack.Navigator>
   );
 }
@@ -44,7 +46,7 @@ function AppStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Tabs" component={AppTabs} />
-      <Stack.Screen name="Editar Perfil" component={ScreenEditProfile} options={{headerShown:true}}/>
+      <Stack.Screen name="Editar Perfil" component={ScreenEditProfile} options={{ headerShown: true }} />
       <Stack.Screen name="Más Detalles" component={DetailLibrary} />
     </Stack.Navigator>
   );
@@ -93,6 +95,17 @@ function AppTabs() {
         }}
       />
 
+      <Tab.Screen
+        name="GYMS"
+        component={ScreenGym}
+        options={{
+          tabBarIcon: ({ color, focused }) => (
+            <View style={tabStyle(focused)}>
+              <AwesomeIcon name="map-marker-radius" color={color} />
+            </View>
+          ),
+        }}
+      />
     </Tab.Navigator>
   );
 }
@@ -102,7 +115,7 @@ function StackExercises() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Library" component={ScreenLibrary} />
-      <Stack.Screen name="Más Detalles" component={DetailLibrary} options={{headerShown:true}} />
+      <Stack.Screen name="Más Detalles" component={DetailLibrary} options={{ headerShown: true }} />
     </Stack.Navigator>
   );
 }
