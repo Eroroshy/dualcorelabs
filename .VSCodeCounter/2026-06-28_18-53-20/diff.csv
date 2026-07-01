@@ -1,0 +1,41 @@
+"filename", "language", "Dotenv", "JavaScript", "JSON", "JSON with Comments", "TypeScript JSX", "comment", "blank", "total"
+"c:\Users\bymaz\kinetic\.env", "Dotenv", -5, 0, 0, 0, 0, 2, -1, -4
+"c:\Users\bymaz\kinetic\App.js", "JavaScript", 0, -1, 0, 0, 0, 0, -2, -3
+"c:\Users\bymaz\kinetic\app.json", "JSON with Comments", 0, 0, 0, 10, 0, 0, 0, 10
+"c:\Users\bymaz\kinetic\app\(tabs)\_layout.tsx", "TypeScript JSX", 0, 0, 0, 0, 10, 0, -3, 7
+"c:\Users\bymaz\kinetic\app\(tabs)\history.tsx", "TypeScript JSX", 0, 0, 0, 0, 4, 0, 2, 6
+"c:\Users\bymaz\kinetic\app\(tabs)\index.tsx", "TypeScript JSX", 0, 0, 0, 0, 114, 3, 8, 125
+"c:\Users\bymaz\kinetic\app\MyNav.js", "JavaScript", 0, 74, 0, 0, 0, -7, 3, 70
+"c:\Users\bymaz\kinetic\app\backend.js", "JavaScript", 0, 4, 0, 0, 0, 0, 0, 4
+"c:\Users\bymaz\kinetic\app\config\db.js", "JavaScript", 0, -9, 0, 0, 0, 0, -2, -11
+"c:\Users\bymaz\kinetic\app\config\init-db.js", "JavaScript", 0, -19, 0, 0, 0, 0, -4, -23
+"c:\Users\bymaz\kinetic\app\context\AuthContext.js", "JavaScript", 0, 33, 0, 0, 0, 13, -7, 39
+"c:\Users\bymaz\kinetic\app\controllers\auth.controller.js", "JavaScript", 0, -1, 0, 0, 0, 8, 1, 8
+"c:\Users\bymaz\kinetic\app\controllers\progress.controller.js", "JavaScript", 0, 54, 0, 0, 0, 0, 11, 65
+"c:\Users\bymaz\kinetic\app\i18n.js", "JavaScript", 0, 254, 0, 0, 0, 8, 7, 269
+"c:\Users\bymaz\kinetic\app\middleware\auth.middleware.js", "JavaScript", 0, -3, 0, 0, 0, 0, -8, -11
+"c:\Users\bymaz\kinetic\app\models\profile.model.js", "JavaScript", 0, -77, 0, 0, 0, 0, -5, -82
+"c:\Users\bymaz\kinetic\app\models\user.model.js", "JavaScript", 0, -51, 0, 0, 0, 0, -8, -59
+"c:\Users\bymaz\kinetic\app\routes\gym.routes.js", "JavaScript", 0, 37, 0, 0, 0, 2, 8, 47
+"c:\Users\bymaz\kinetic\app\routes\progress.routes.js", "JavaScript", 0, 10, 0, 0, 0, 1, 4, 15
+"c:\Users\bymaz\kinetic\app\screen\ScreenHome.js", "JavaScript", 0, 248, 0, 0, 0, 0, 38, 286
+"c:\Users\bymaz\kinetic\app\services\auth.service.js", "JavaScript", 0, -58, 0, 0, 0, 0, -15, -73
+"c:\Users\bymaz\kinetic\app\subapaseClient.js", "JavaScript", 0, 12, 0, 0, 0, 0, 2, 14
+"c:\Users\bymaz\kinetic\app\tabs\account\ScreenEditProfile.js", "JavaScript", 0, 39, 0, 0, 0, 7, 19, 65
+"c:\Users\bymaz\kinetic\app\tabs\account\ScreenLogin.js", "JavaScript", 0, -18, 0, 0, 0, 1, -8, -25
+"c:\Users\bymaz\kinetic\app\tabs\account\ScreenSignUp.js", "JavaScript", 0, 3, 0, 0, 0, 0, -6, -3
+"c:\Users\bymaz\kinetic\app\tabs\calculator\ScreenCalculator.js", "JavaScript", 0, 83, 0, 0, 0, 0, -13, 70
+"c:\Users\bymaz\kinetic\app\tabs\gym\ScreenGym.js", "JavaScript", 0, 201, 0, 0, 0, 3, 17, 221
+"c:\Users\bymaz\kinetic\app\tabs\history\ScreenHistory.js", "JavaScript", 0, 181, 0, 0, 0, 6, 24, 211
+"c:\Users\bymaz\kinetic\app\tabs\home\ScreenHistory.js", "JavaScript", 0, 604, 0, 0, 0, 10, 76, 690
+"c:\Users\bymaz\kinetic\app\tabs\home\ScreenHome.js", "JavaScript", 0, 56, 0, 0, 0, 3, 18, 77
+"c:\Users\bymaz\kinetic\app\tabs\home\perfilhome.js", "JavaScript", 0, 238, 0, 0, 0, 4, 32, 274
+"c:\Users\bymaz\kinetic\app\tabs\library\DetailLibrary.js", "JavaScript", 0, -43, 0, 0, 0, 2, -18, -59
+"c:\Users\bymaz\kinetic\app\tabs\library\ScreenLibrary.js", "JavaScript", 0, 74, 0, 0, 0, 9, -10, 73
+"c:\Users\bymaz\kinetic\app\utils\bcrypt.js", "JavaScript", 0, -17, 0, 0, 0, 0, -5, -22
+"c:\Users\bymaz\kinetic\app\utils\jwt.js", "JavaScript", 0, -16, 0, 0, 0, 0, -4, -20
+"c:\Users\bymaz\kinetic\assets\data\traducciones.json", "JSON", 0, 0, 913, 0, 0, 0, 0, 913
+"c:\Users\bymaz\kinetic\package-lock.json", "JSON", 0, 0, 687, 0, 0, 0, 0, 687
+"c:\Users\bymaz\kinetic\package.json", "JSON", 0, 0, 10, 0, 0, 0, 0, 10
+"c:\Users\bymaz\kinetic\server.js", "JavaScript", 0, -11, 0, 0, 0, 0, -3, -14
+"Total", "-", -5, 1881, 1610, 10, 128, 75, 148, 3847

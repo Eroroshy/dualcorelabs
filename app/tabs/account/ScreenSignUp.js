@@ -1,62 +1,55 @@
 import React, { useState } from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { TextInput } from "react-native-paper";
-
-import { API_URL } from "../../config/api";
+import { supabase } from "../../subapaseClient";
 
 export default function RegisterScreen({ navigation }) {
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [isSecure, setIsSecure] = useState(true);
+    const [loading, setLoading] = useState(false);
 
     const handleRegister = async () => {
-
-    try {
-
-        const response =
-        await fetch(
-            `${API_URL}/auth/register`,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type":
-                    "application/json"
+        setLoading(true);
+        try {
+            const { data, error } = await supabase.auth.signUp({
+                email,
+                password,
+                options: {
+                    data: {
+                        nombre: email.split("@")[0],
+                    },
                 },
-                body: JSON.stringify({
-                    nombre: email.split("@")[0],
-                    email,
-                    password
-                })
+            });
+
+            if (error) {
+                throw error;
             }
-        );
-
-        const data =
-        await response.json();
-
-        if(!response.ok){
-            throw new Error(
-                data.message
+    
+            if (data.user && data.user.identities && data.user.identities.length === 0) {
+                 Alert.alert(
+                    "Registro casi completo",
+                    "Por favor, revisa tu correo para confirmar tu cuenta."
+                );
+            } else {
+                Alert.alert(
+                    "Registro exitoso",
+                    "¡Tu cuenta ha sido creada!"
+                );
+            }
+    
+            navigation.goBack();
+    
+        } catch(error){
+            Alert.alert(
+                "Error en el registro",
+                error.message
             );
+        } finally {
+            setLoading(false);
         }
-
-        Alert.alert(
-            "Success",
-            "User registered"
-        );
-
-        navigation.goBack();
-
-    } catch(error){
-
-        Alert.alert(
-            "Error",
-            error.message
-        );
-
-    }
-
-};
+    };
 
     return (
         <View style={styles.container}>
@@ -102,8 +95,8 @@ export default function RegisterScreen({ navigation }) {
                     />
                 </View>
 
-                <TouchableOpacity style={styles.button} onPress={handleRegister}>
-                    <Text style={styles.buttonText}>REGISTER</Text>
+                <TouchableOpacity style={[styles.button, loading && styles.buttonDisabled]} onPress={handleRegister} disabled={loading}>
+                    <Text style={styles.buttonText}>{loading ? 'CREATING ACCOUNT...' : 'REGISTER'}</Text>
                 </TouchableOpacity>
 
                 <View style={styles.dividerContainer}>
@@ -183,6 +176,10 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: "#002052",
         letterSpacing: 1
+    },
+
+    buttonDisabled: {
+        backgroundColor: "#aabfff",
     },
 
     buttonLink: {

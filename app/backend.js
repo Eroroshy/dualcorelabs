@@ -3,6 +3,7 @@ const cors = require("cors");
 const authRoutes = require("./routes/auth.routes");
 const profileRoutes = require("./routes/profile.routes");
 const gymRoutes = require("./routes/gym.routes");
+const progressRoutes = require("./routes/progress.routes");
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.use("/api/auth", authRoutes);
 console.log('Mounting /api/profile routes');
 app.use("/api/profile", profileRoutes);
 app.use("/api/gyms", gymRoutes);
+app.use("/api/progress", progressRoutes);
 
 // 404 handler for unknown API routes — return JSON instead of HTML
 app.use((req, res, next) => {

@@ -1,16 +1,26 @@
 {
   "expo": {
-    "name": "legendlore",
-    "slug": "kinetic",
+    "name": "Kinetic",
+    "slug": "kinetic-app",
     "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/kinetic.jpg",
+    "splash": {
+      "image": "./assets/kinetic.jpg",
+      "resizeMode": "contain",
+      "backgroundColor": "#0c0e10"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/kinetic.jpg",
+        "backgroundColor": "#0c0e10"
+      },
+      "package": "com.kinetic"
+    },
     "extra": {
       "eas": {
-        "projectId": "a41e1e8a-505d-42de-b1e2-0d44754e7855"
+        "projectId": "785523d7-9fa2-4def-ac10-409639eb1a96"
       }
-    },
-    "owner": "dream-team-international-system-entertainment",
-    "android": {
-      "package": "com.dreamteaminternationalsystementertainment.kinetic"
     }
   }
 }

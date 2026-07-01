@@ -1,4 +1,6 @@
+import { useNavigation } from '@react-navigation/native';
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ScrollView,
   StyleSheet,
@@ -8,48 +10,100 @@ import {
   View,
 } from "react-native";
 
+// Diccionario local estricto para evitar el Spanglish y asegurar el cambio de idioma inmediato
+const TEXTOS_LOCALES = {
+  es: {
+    tag: "HERRAMIENTAS DE RENDIMIENTO",
+    titulo_1: "POTENCIAL",
+    titulo_2: "MÁXIMO",
+    descripcion: "Calcula tu repetición máxima estimada utilizando la fórmula científica de Epley.",
+    info_titulo: "¿CÓMO FUNCIONA?",
+    info_descripcion: "La fórmula de Epley estima tu fuerza máxima teórica (1RM) sin necesidad de levantar un peso límite real. Es una metodología segura que escala matemáticamente esfuerzos submáximos, reduciendo drásticamente la tensión en las articulaciones y los tejidos conectivos para evitar lesiones.",
+    peso_label: "PESO LEVANTADO",
+    peso_placeholder: "0 kg",
+    reps_label: "NÚMERO DE REPETICIONES",
+    btn_calcular: "CALCULAR MÁXIMO",
+    resultado_label: "1 RM ESTIMADO",
+    unidad: "KILOGRAMOS",
+  },
+  en: {
+    tag: "PERFORMANCE TOOLS",
+    titulo_1: "MAXIMUM",
+    titulo_2: "POTENTIAL",
+    descripcion: "Calculate your estimated 1-Rep Max using the Epley formula.",
+    info_titulo: "HOW IT WORKS",
+    info_descripcion: "The Epley formula estimates your maximum theoretical strength (1RM) without needing to lift an actual maximal weight. This is a safer methodology that mathematically scales submaximal efforts, drastically reducing stress on joints and connective tissues.",
+    peso_label: "WEIGHT LIFTED",
+    peso_placeholder: "0 kg",
+    reps_label: "NUMBER OF REPS",
+    btn_calcular: "CALCULATE MAX",
+    resultado_label: "ESTIMATED 1 RM",
+    unidad: "KILOGRAMS",
+  }
+};
+
 export default function ScreenCalculator() {
+  const navigation = useNavigation();
+  const { i18n } = useTranslation();
+
   const [weight, setWeight] = useState("");
   const [reps, setReps] = useState("");
   const [result, setResult] = useState(0);
 
-  // Epley formula: 1RM = w * (1 + r / 30)
+  // Selecciona el idioma actual del sistema de forma segura
+  const idiomaActual = i18n.language?.startsWith('es') ? 'es' : 'en';
+  const txt = TEXTOS_LOCALES[idiomaActual];
+
+  // Fórmula de Epley: 1RM = w * (1 + r / 30)
   const calculate1RM = () => {
     const w = parseFloat(weight);
     const r = parseFloat(reps);
     if (!w || !r) return;
-    if (r == "1") return setResult(w);
+    if (r === 1 || r === "1") return setResult(w);
     const oneRM = w * (1 + r / 30);
     setResult(Math.round(oneRM));
   };
 
   return (
     <View style={styles.container}>
-      {/* HEADER */}
+      {/* HEADER CON BOTÓN DE REGRESO ATRÁS */}
       <View style={styles.header}>
+        <TouchableOpacity 
+          style={styles.backButton} 
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.backArrow}>←</Text>
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>K I N E T I C</Text>
+        <View style={styles.placeholderView} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
-        {/* TITLE */}
-        <Text style={styles.tag}>PERFORMANCE TOOLS</Text>
+        {/* ENCABEZADO DE PANTALLA */}
+        <Text style={styles.tag}>{txt.tag.toUpperCase()}</Text>
         <Text style={styles.title}>
-          MAXIMUM{"\n"}<Text style={styles.highlight}>POTENTIAL</Text>
+          {txt.titulo_1.toUpperCase()}{"\n"}
+          <Text style={styles.highlight}>{txt.titulo_2.toUpperCase()}</Text>
         </Text>
 
-        <Text style={styles.text}>
-          {"Calculate your estimated 1-Rep Max using the Epley formula.\n\nPrecision data for elite performance."}
-        </Text>
+        <Text style={styles.text}>{txt.descripcion}</Text>
 
-        {/* INPUT CARD */}
+        {/* 🌟 SECCIÓN INFORMATIVA (AHORA EN LA PARTE SUPERIOR) */}
+        <View style={styles.infoCard}>
+          <Text style={styles.infoTitle}>{txt.info_titulo}</Text>
+          <Text style={styles.infoText}>{txt.info_descripcion}</Text>
+        </View>
+
+        {/* TARJETA DE FORMULARIO */}
         <View style={styles.card}>
           <View style={styles.inputBlock}>
-            <Text style={styles.label}>WEIGHT LIFTED</Text>
+            <Text style={styles.label}>{txt.peso_label}</Text>
             <TextInput
               style={styles.input}
               keyboardType="numeric"
-              placeholder="0 kgs"
+              placeholder={txt.peso_placeholder}
               placeholderTextColor="#555"
               value={weight}
               onChangeText={setWeight}
@@ -57,7 +111,7 @@ export default function ScreenCalculator() {
           </View>
 
           <View style={styles.inputBlock}>
-            <Text style={styles.label}>NUMBER OF REPS</Text>
+            <Text style={styles.label}>{txt.reps_label}</Text>
             <TextInput
               style={styles.input}
               keyboardType="numeric"
@@ -68,16 +122,16 @@ export default function ScreenCalculator() {
             />
           </View>
 
-          <TouchableOpacity style={styles.button} onPress={calculate1RM}>
-            <Text style={styles.buttonText}>CALCULATE MAX</Text>
+          <TouchableOpacity style={styles.button} onPress={calculate1RM} activeOpacity={0.8}>
+            <Text style={styles.buttonText}>{txt.btn_calcular.toUpperCase()}</Text>
           </TouchableOpacity>
         </View>
 
-        {/* RESULT */}
+        {/* PANEL DE RESULTADO */}
         <View style={styles.resultCard}>
-          <Text style={styles.resultLabel}>ESTIMATED 1 RM</Text>
+          <Text style={styles.resultLabel}>{txt.resultado_label}</Text>
           <Text style={styles.result}>{result}</Text>
-          <Text style={styles.resultLabel}>KGS</Text>
+          <Text style={styles.resultLabel}>{txt.unidad}</Text>
         </View>
 
       </ScrollView>
@@ -86,96 +140,120 @@ export default function ScreenCalculator() {
 }
 
 const styles = StyleSheet.create({
-
   container: {
     flex: 1,
     backgroundColor: "#0c0e10",
   },
-
   content: {
     padding: 16,
-    paddingBottom: 40,
+    paddingBottom: 60,
   },
-
-  // HEADER
-
+  
+  // HEADER AJUSTADO PARA EL BOTÓN DE REGRESAR
   header: {
     marginTop: 40,
     marginBottom: 10,
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
     backgroundColor: "#111416",
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
   },
-
+  backButton: {
+    paddingRight: 10,
+  },
+  backArrow: {
+    color: "#88adff",
+    fontSize: 24,
+    fontWeight: "bold",
+  },
   headerTitle: {
     fontFamily: "Lexend_800ExtraBold",
     fontSize: 18,
     color: "#eeeef0",
+    textAlign: "center",
   },
-
-  // TITLE
+  placeholderView: {
+    width: 24, // Equilibra el espacio ocupado por la flecha izquierda
+  },
 
   tag: {
     color: "#88adff",
     fontSize: 14,
     letterSpacing: 2,
+    marginTop: 10,
   },
-
   title: {
-    fontSize: 48,
+    fontSize: 44,
     color: "#fff",
     fontFamily: "Lexend_800ExtraBold",
+    lineHeight: 50,
   },
-
   highlight: {
     color: "#719eff",
   },
-
   text: {
     color: "#aaa",
-    marginTop: 15,
-    marginBottom: 20,
-    fontSize: 18,
+    marginTop: 12,
+    marginBottom: 16,
+    fontSize: 16,
+    lineHeight: 22,
+    fontFamily: "Manrope_400Regular",
+  },
+
+  // TARJETA EXPLICATIVA SUPERIOR
+  infoCard: {
+    backgroundColor: "#111416",
+    padding: 18,
+    borderRadius: 12,
+    marginVertical: 10,
+    borderLeftWidth: 4,
+    borderLeftColor: "#88adff",
+  },
+  infoTitle: {
+    color: "#eeeef0",
+    fontSize: 14,
+    fontFamily: "Lexend_700Bold",
+    letterSpacing: 1,
+    marginBottom: 6,
+  },
+  infoText: {
+    color: "#9da0a3",
+    fontSize: 14,
     lineHeight: 20,
     fontFamily: "Manrope_400Regular",
   },
 
-  // INPUT CARD
-
   card: {
     backgroundColor: "#171a1c",
-    padding: 30,
+    padding: 24,
     borderRadius: 12,
-    marginTop: 20,
+    marginTop: 15,
   },
-
   inputBlock: {
     marginBottom: 16,
   },
-
   label: {
     color: "#aaa",
     fontSize: 12,
-    letterSpacing: 2,
+    letterSpacing: 1.5,
     fontFamily: "Manrope_700Bold",
     marginBottom: 8
   },
-
   input: {
     backgroundColor: "#232629",
     color: "#fff",
     borderRadius: 10,
-    padding: 25,
+    padding: 18,
     fontSize: 18,
   },
-
   button: {
     backgroundColor: "#719eff",
-    padding: 18,
+    padding: 16,
     borderRadius: 8,
-    marginTop: 10,
+    marginTop: 8,
   },
-
   buttonText: {
     textAlign: "center",
     fontFamily: "Lexend_800ExtraBold",
@@ -183,31 +261,23 @@ const styles = StyleSheet.create({
     color: "#002052",
   },
 
-  //RESULT
-
   resultCard: {
     backgroundColor: "#171a1c",
-    padding: 30,
+    padding: 24,
     borderRadius: 12,
     marginTop: 20,
     alignItems: "center",
   },
-
   resultLabel: {
     color: "#88adff",
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: "Lexend_700Bold",
     letterSpacing: 2,
   },
-
   result: {
-    fontSize: 72,
+    fontSize: 64,
     color: "#fff",
     fontFamily: "Lexend_800ExtraBold",
-  },
-
-  unit: {
-    color: "#aaa",
-    fontFamily: "Lexend_700Bold",
+    lineHeight: 74,
   },
 });

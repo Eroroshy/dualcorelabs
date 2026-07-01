@@ -1,192 +1,257 @@
-import { useContext, useEffect, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity } from "react-native";
-import { TextInput } from "react-native-paper";
-import { API_URL } from "../../config/api";
-import { AuthContext } from "../../context/AuthContext";
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native'; // <-- 1. Importamos useNavigation
+import React, { useContext, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+
+import { AuthContext } from '../../context/AuthContext';
+import { supabase } from '../../subapaseClient';
 
 export default function ScreenEditProfile() {
-  const { user, token, updateUser } = useContext(AuthContext);
-  const profile = user?.profile || {};
+  const { t } = useTranslation();
+  const { user, updateUser } = useContext(AuthContext);
+  const navigation = useNavigation(); // <-- 2. Inicializamos la navegación
+  const profile = user?.profile;
 
-  const [nombre, setNombre] = useState(user?.nombre || "");
-  const [email, setEmail] = useState(user?.email || "");
-  const [edad, setEdad] = useState(profile.edad?.toString() || "");
-  const [pesoKg, setPesoKg] = useState(profile.peso_kg?.toString() || "");
-  const [alturaCm, setAlturaCm] = useState(profile.altura_cm?.toString() || "");
-  const [nivelExperiencia, setNivelExperiencia] = useState(profile.nivel_experiencia || "");
-  const [objetivo, setObjetivo] = useState(profile.objetivo || "");
-  const [fotoUrl, setFotoUrl] = useState(profile.foto_url || "");
-  const [saving, setSaving] = useState(false);
+  // Estados locales del formulario
+  const [nombre, setNombre] = useState("");
+  const [edad, setEdad] = useState("");
+  const [peso, setPeso] = useState("");
+  const [altura, setAltura] = useState("");
+  const [nivel, setNivel] = useState("Intermedio");
+  const [objetivo, setObjetivo] = useState("Perder Grasa");
+  
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
+  // Mapeo estructurado para traducir dinámicamente las opciones sin romper la Base de Datos
+  const opcionesNivel = [
+    { id: "Principiante", labelKey: "level_principiante" },
+    { id: "Intermedio", labelKey: "level_intermedio" },
+    { id: "Avanzado", labelKey: "level_avanzado" },
+  ];
+
+  const opcionesObjetivos = [
+    { id: "Perder Grasa", labelKey: "obj_perder_grasa" },
+    { id: "Ganar Músculo", labelKey: "obj_ganar_musculo" },
+    { id: "Mantener Peso", labelKey: "obj_mantener_peso" },
+    { id: "Resistencia", labelKey: "obj_resistencia" },
+  ];
+
+  // Rellenar el formulario con los datos reales del usuario al cargar la pantalla
   useEffect(() => {
-    setNombre(user?.nombre || "");
-    setEmail(user?.email || "");
-    setEdad(profile.edad?.toString() || "");
-    setPesoKg(profile.peso_kg?.toString() || "");
-    setAlturaCm(profile.altura_cm?.toString() || "");
-    setNivelExperiencia(profile.nivel_experiencia || "");
-    setObjetivo(profile.objetivo || "");
-    setFotoUrl(profile.foto_url || "");
-  }, [user]);
+    if (profile) {
+      setNombre(profile.nombre || user?.nombre || "");
+      setEdad(profile.edad?.toString() || "");
+      setPeso(profile.peso_kg?.toString() || "");
+      setAltura(profile.altura_cm?.toString() || "");
+      setNivel(profile.nivel_experiencia || profile.nivel || "Intermedio");
+      setObjetivo(profile.objetivo || "Perder Grasa");
+    }
+  }, [profile]);
 
-  const handleSave = async () => {
+  const guardarCambios = async () => {
+    if (!user?.id) return;
+    
     try {
-      setSaving(true);
-      if (!token) {
-        setSaving(false);
-        Alert.alert("Sesión inválida", "Por favor inicia sesión nuevamente.");
-        return;
-      }
+      setIsSaving(true);
 
-      const response = await fetch(`${API_URL}/profile/me`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          nombre,
-          edad: edad ? parseInt(edad, 10) : null,
-          peso_kg: pesoKg ? parseFloat(pesoKg) : null,
-          altura_cm: alturaCm ? parseFloat(alturaCm) : null,
-          nivel_experiencia: nivelExperiencia,
-          objetivo,
-          foto_url: fotoUrl
+      // 1. Actualizar directamente en la base de datos de Supabase
+      const { error } = await supabase
+        .from("perfiles")
+        .update({
+          nombre: nombre,
+          edad: parseInt(edad) || null,
+          peso_kg: parseFloat(peso) || null,
+          altura_cm: parseInt(altura) || null,
+          nivel_experiencia: nivel,
+          objetivo: objetivo,
         })
+        .eq("usuario_id", user.id);
+
+      if (error) throw error;
+
+      // 2. Sincronizar el estado global en React para refrescar el Home al instante
+      updateUser({
+        profile: {
+          nombre,
+          edad: parseInt(edad) || null,
+          peso_kg: parseFloat(peso) || null,
+          altura_cm: parseInt(altura) || null,
+          nivel_experiencia: nivel,
+          objetivo,
+        }
       });
 
-      if (!response.ok) {
-        const contentType = response.headers.get("content-type") || "";
-        let errorText = `HTTP ${response.status}`;
-        try {
-          if (contentType.includes("application/json")) {
-            const errorData = await response.json();
-            errorText = errorData.message || JSON.stringify(errorData);
-          } else {
-            errorText = await response.text();
+      // 3. Alerta con redirección automática al presionar "OK"
+      Alert.alert(
+        t("success"), 
+        t("profile_updated"),
+        [
+          { 
+            text: "OK", 
+            onPress: () => navigation.goBack() // Regresa automáticamente a PerfilHome
           }
-        } catch (e) {
-          errorText = await response.text().catch(() => errorText);
-        }
-        console.error("Profile update failed:", response.status, errorText);
-        throw new Error(errorText || "Error al actualizar perfil");
-      }
-
-      let data = null;
-      try {
-        data = await response.json();
-      } catch (e) {
-        const text = await response.text().catch(() => null);
-        console.warn("Profile update returned non-JSON response:", text);
-        throw new Error(text || "Respuesta inválida del servidor");
-      }
-      updateUser(data.user);
-      Alert.alert("Perfil actualizado", "Tus cambios se guardaron correctamente.");
+        ]
+      );
+      
     } catch (error) {
-      Alert.alert("Error", error.message);
+      Alert.alert(t("error"), t("saving_error") + error.message);
     } finally {
-      setSaving(false);
+      setIsSaving(false);
     }
   };
 
+  // Buscar la traducción del objetivo seleccionado para el header del Dropdown
+  const objetivoActualSeleccionado = opcionesObjetivos.find(item => item.id === objetivo);
+
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Editar Perfil</Text>
-
-      <TextInput
-        label="Nombre"
-        value={nombre}
-        onChangeText={setNombre}
-        style={styles.input}
-        textColor="#fff"
-      />
-      <TextInput
-        label="Email"
-        value={email}
-        style={styles.input}
-        textColor="#fff"
-        editable={false}
-      />
-      <TextInput
-        label="Edad"
-        value={edad}
-        style={styles.input}
-        keyboardType="numeric"
-        onChangeText={setEdad}
-        textColor="#fff"
-      />
-      <TextInput
-        label="Peso (kg)"
-        value={pesoKg}
-        style={styles.input}
-        keyboardType="numeric"
-        onChangeText={setPesoKg}
-        textColor="#fff"
-      />
-      <TextInput
-        label="Altura (cm)"
-        value={alturaCm}
-        style={styles.input}
-        keyboardType="numeric"
-        onChangeText={setAlturaCm}
-        textColor="#fff"
-      />
-      <TextInput
-        label="Nivel de experiencia"
-        value={nivelExperiencia}
-        style={styles.input}
-        onChangeText={setNivelExperiencia}
-        textColor="#fff"
-      />
-      <TextInput
-        label="Objetivo"
-        value={objetivo}
-        style={styles.input}
-        onChangeText={setObjetivo}
-        textColor="#fff"
-      />
-      <TextInput
-        label="Foto URL"
-        value={fotoUrl}
-        style={styles.input}
-        onChangeText={setFotoUrl}
-        textColor="#fff"
-      />
-
-      <TouchableOpacity
-        style={[styles.button, saving && styles.buttonDisabled]}
-        onPress={handleSave}
-        disabled={saving}
+    <View style={styles.container}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
       >
-        <Text style={styles.buttonText}>{saving ? "Guardando..." : "Guardar"}</Text>
-      </TouchableOpacity>
-    </ScrollView>
+        
+        <Text style={styles.sectionLabel}>{t("personal_data")}</Text>
+
+        <Text style={styles.inputLabel}>{t("full_name")}</Text>
+        <TextInput
+          style={styles.input}
+          value={nombre}
+          onChangeText={setNombre}
+          placeholderTextColor="#46484a"
+        />
+
+        <Text style={styles.inputLabel}>{t("edit_age")}</Text>
+        <TextInput
+          style={styles.input}
+          value={edad}
+          onChangeText={setEdad}
+          keyboardType="numeric"
+          placeholderTextColor="#46484a"
+        />
+
+        <View style={styles.row}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.inputLabel}>{t("edit_weight")}</Text>
+            <TextInput
+              style={styles.input}
+              value={peso}
+              onChangeText={setPeso}
+              keyboardType="numeric"
+              placeholderTextColor="#46484a"
+            />
+          </View>
+          <View style={{ flex: 1, marginLeft: 16 }}>
+            <Text style={styles.inputLabel}>{t("edit_height")}</Text>
+            <TextInput
+              style={styles.input}
+              value={altura}
+              onChangeText={setAltura}
+              keyboardType="numeric"
+              placeholderTextColor="#46484a"
+            />
+          </View>
+        </View>
+
+        <Text style={[styles.sectionLabel, { marginTop: 20 }]}>{t("workout_config")}</Text>
+
+        {/* Selector de Nivel Traducible */}
+        <Text style={styles.inputLabel}>{t("exp_level")}</Text>
+        <View style={styles.pillRow}>
+          {opcionesNivel.map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              style={[styles.pill, nivel === item.id && styles.pillActive]}
+              onPress={() => setNivel(item.id)}
+            >
+              <Text style={[styles.pillText, nivel === item.id && styles.textBlack]}>
+                {t(item.labelKey)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Desplegable de Objetivo Traducible */}
+        <Text style={styles.inputLabel}>{t("workout_objective")}</Text>
+        
+        <TouchableOpacity 
+          style={styles.dropdownHeader} 
+          onPress={() => setIsDropdownOpen(!isDropdownOpen)}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.dropdownHeaderText}>
+            {objetivoActualSeleccionado ? t(objetivoActualSeleccionado.labelKey) : objetivo}
+          </Text>
+          <Ionicons 
+            name={isDropdownOpen ? "chevron-up" : "chevron-down"} 
+            size={20} 
+            color="#88adff" 
+          />
+        </TouchableOpacity>
+
+        {isDropdownOpen && (
+          <View style={styles.dropdownList}>
+            {opcionesObjetivos.map((item) => (
+              <TouchableOpacity
+                key={item.id}
+                style={[styles.dropdownItem, objetivo === item.id && styles.dropdownItemActive]}
+                onPress={() => {
+                  setObjetivo(item.id);
+                  setIsDropdownOpen(false);
+                }}
+              >
+                <Text style={[styles.dropdownItemText, objetivo === item.id && styles.textBlue]}>
+                  {t(item.labelKey)}
+                </Text>
+                {objetivo === item.id && (
+                  <Ionicons name="checkmark" size={16} color="#88adff" />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {/* Botón de Guardar Dinámico */}
+        <TouchableOpacity style={styles.saveBtn} onPress={guardarCambios} disabled={isSaving}>
+          {isSaving ? (
+            <ActivityIndicator size="small" color="#0c0e10" />
+          ) : (
+            <>
+              <Ionicons name="save-outline" size={20} color="#0c0e10" />
+              <Text style={styles.saveBtnText}>{t("save_changes")}</Text>
+            </>
+          )}
+        </TouchableOpacity>
+
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#0c0e10",
-    padding: 20,
-  },
-  title: {
-    color: "#fff",
-    fontSize: 22,
-    marginBottom: 20,
-  },
-  input: {
-    backgroundColor: "#171a1c",
-    marginBottom: 15,
-  },
-  button: {
-    backgroundColor: "#88adff",
-    padding: 14,
-    borderRadius: 10,
-  },
-  buttonText: {
-    textAlign: "center",
-    color: "#002052",
-    fontWeight: "bold",
-  },
+  container: { flex: 1, backgroundColor: "#0c0e10", paddingHorizontal: 16, paddingTop: 10 },
+  scrollView: { backgroundColor: "#0c0e10" },
+  scrollContent: { paddingBottom: 60, backgroundColor: "#0c0e10" },
+  sectionLabel: { fontFamily: "Manrope_500Medium", fontSize: 12, color: "#88adff", letterSpacing: 1, marginBottom: 15 },
+  inputLabel: { fontFamily: "Manrope_400Regular", fontSize: 13, color: "#aaabad", marginBottom: 8, marginTop: 10 },
+  input: { backgroundColor: "#171a1c", borderRadius: 10, color: "#fff", paddingHorizontal: 16, paddingVertical: 12, fontSize: 14, fontFamily: "Lexend_700Bold", borderWidth: 1, borderColor: "#24282c", marginBottom: 12 },
+  row: { flexDirection: "row", justifyContent: "space-between" },
+  pillRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 15, marginTop: 4 },
+  pill: { paddingVertical: 10, paddingHorizontal: 12, borderRadius: 10, backgroundColor: "#171a1c", borderWidth: 1, borderColor: "#24282c", alignItems: "center", flex: 1, marginHorizontal: 2 },
+  pillActive: { backgroundColor: "#88adff", borderColor: "#88adff" },
+  pillText: { color: "#aaabad", fontSize: 12, fontFamily: "Manrope_700Bold" },
+  textBlack: { color: "#0c0e10" },
+  textBlue: { color: "#88adff" },
+  
+  dropdownHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: "#171a1c", paddingHorizontal: 16, paddingVertical: 14, borderRadius: 10, borderWidth: 1, borderColor: "#24282c", marginBottom: 4 },
+  dropdownHeaderText: { color: "#fff", fontSize: 14, fontFamily: "Lexend_700Bold" },
+  dropdownList: { backgroundColor: "#171a1c", borderRadius: 10, borderWidth: 1, borderColor: "#24282c", overflow: "hidden", marginBottom: 15 },
+  dropdownItem: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#24282c" },
+  dropdownItemActive: { backgroundColor: "#1e2225" },
+  dropdownItemText: { color: "#aaabad", fontSize: 13, fontFamily: "Manrope_600SemiBold" },
+
+  saveBtn: { backgroundColor: "#5eff5e", flexDirection: "row", justifyContent: "center", alignItems: "center", paddingVertical: 16, borderRadius: 14, marginTop: 25, gap: 8, minHeight: 54 },
+  saveBtnText: { color: "#0c0e10", fontFamily: "Lexend_700Bold", fontSize: 14, letterSpacing: 0.5 }
 });

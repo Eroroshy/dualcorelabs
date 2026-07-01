@@ -1,33 +1,41 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
 
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-        tabBarButton: HapticTab,
+        headerShown: false, // Sigue apagado para que no interfiera
+        tabBarActiveTintColor: '#88adff', // Color azul KINETIC cuando la pestaña está activa
+        tabBarInactiveTintColor: '#747578', // Gris apagado para las inactivas
+        tabBarStyle: {
+          backgroundColor: '#111416', // Fondo oscuro premium para la barra inferior
+          borderTopWidth: 1,
+          borderTopColor: '#24282c', // Línea sutil superior para dividir
+          paddingBottom: 5,
+          height: 60,
+        },
       }}>
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          title: 'Home', // Mantiene tu pestaña original
+          tabBarIcon: ({ color }) => <Ionicons size={28} name="home" color={color} />,
         }}
       />
       <Tabs.Screen
         name="explore"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: 'Explore', // Mantiene tu pestaña original
+          tabBarIcon: ({ color }) => <Ionicons size={28} name="paper-plane" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="history"
+        options={{
+          title: 'Historial', // Mantiene tu pestaña original
+          tabBarIcon: ({ color }) => <Ionicons size={28} name="bar-chart" color={color} />,
         }}
       />
     </Tabs>

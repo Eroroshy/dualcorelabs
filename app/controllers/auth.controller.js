@@ -1,57 +1,32 @@
-const authService = require("../services/auth.service");
-const pool = require("../config/db");
+const { supabase } = require("../subapaseClient");
 
 const me = async (req, res) => {
   try {
-    const result = await pool.query(
-      `
-      SELECT
-        u.id,
-        u.nombre,
-        u.email,
-        u.fecha_registro,
-        p.id AS profile_id,
-        p.edad,
-        p.peso_kg,
-        p.altura_cm,
-        p.nivel_experiencia,
-        p.objetivo,
-        p.foto_url,
-        p.actualizado_en
-      FROM usuarios u
-      LEFT JOIN perfiles p ON u.id = p.usuario_id
-      WHERE u.id = $1
-      `,
-      [req.user.id]
-    );
+    // The user object is attached by the updated Supabase auth middleware.
+    // We just need to fetch the associated profile data from our public 'perfiles' table.
+    const { user } = req;
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        message: "Usuario no encontrado"
-      });
+    if (!user) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
     }
 
-    const row = result.rows[0];
-    const user = {
-      id: row.id,
-      nombre: row.nombre,
-      email: row.email,
-      fecha_registro: row.fecha_registro,
-      profile: row.profile_id
-        ? {
-            id: row.profile_id,
-            edad: row.edad,
-            peso_kg: row.peso_kg,
-            altura_cm: row.altura_cm,
-            nivel_experiencia: row.nivel_experiencia,
-            objetivo: row.objetivo,
-            foto_url: row.foto_url,
-            actualizado_en: row.actualizado_en,
-          }
-        : null,
+    const { data: profile, error: profileError } = await supabase
+      .from("perfiles")
+      .select("*")
+      .eq("usuario_id", user.id)
+      .single();
+
+    if (profileError && profileError.code !== 'PGRST116') { // PGRST116 = no rows found
+      throw profileError;
+    }
+
+    // Combine Supabase auth user with our public profile data
+    const userWithProfile = {
+      ...user,
+      profile: profile,
     };
 
-    res.json(user);
+    res.json(userWithProfile);
   } catch (error) {
     res.status(500).json({
       message: error.message
@@ -59,69 +34,102 @@ const me = async (req, res) => {
   }
 };
 
-const register =
-async (req,res)=>{
+const register = async (req, res) => {
+  try {
+    const { nombre, email, password } = req.body;
 
-  try{
+    if (!nombre || !email || !password) {
+      return res.status(400).json({ message: "Nombre, email y password son requeridos" });
+    }
 
-    const {
-      nombre,
-      email,
-      password
-    } = req.body;
+    // Sign up the user with Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: email,
+      password: password,
+      options: {
+        // Store extra data like name
+        data: {
+          nombre: nombre,
+        },
+      },
+    });
 
-    const user =
-    await authService.register(
-      nombre,
-      email,
-      password
-    );
+    if (authError) {
+      return res.status(400).json({ success: false, message: authError.message });
+    }
+    
+    if (!authData.user) {
+        return res.status(500).json({ success: false, message: "No se pudo crear el usuario." });
+    }
+
+    // After successful signup, create a profile for the user in the 'perfiles' table
+    const { error: profileError } = await supabase
+      .from("perfiles")
+      .insert({
+        usuario_id: authData.user.id,
+      });
+
+    if (profileError) {
+      // Best effort: log the error but the user was already created.
+      console.error("Error creating user profile:", profileError.message);
+    }
 
     res.status(201).json({
-      success:true,
-      user
+      success: true,
+      ...authData
     });
-
-  }
-  catch(error){
-
+  } catch (error) {
     res.status(400).json({
-      success:false,
-      message:error.message
+      success: false,
+      message: error.message,
     });
-
   }
-
 };
 
-const login =
-async (req,res)=>{
+const login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
 
-  try{
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email y password son requeridos" });
+    }
 
-    const {
+    const { data: sessionData, error: authError } = await supabase.auth.signInWithPassword({
       email,
-      password
-    } = req.body;
-
-    const result =
-    await authService.login(
-      email,
-      password
-    );
-
-    res.json(result);
-
-  }
-  catch(error){
-
-    res.status(401).json({
-      success:false,
-      message:error.message
+      password,
     });
 
-  }
+    if (authError) {
+      return res.status(401).json({ success: false, message: authError.message });
+    }
 
+    if (!sessionData.user) {
+        return res.status(404).json({ success: false, message: "Usuario no encontrado" });
+    }
+    
+    // Fetch profile to return complete user object
+    const { data: profile, error: profileError } = await supabase
+      .from("perfiles")
+      .select("*")
+      .eq("usuario_id", sessionData.user.id)
+      .single();
+
+    if (profileError && profileError.code !== 'PGRST116') {
+      throw profileError;
+    }
+
+    res.json({
+        success: true,
+        session: sessionData.session,
+        user: { ...sessionData.user, profile }
+    });
+
+  } catch (error) {
+    res.status(401).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };
 
 module.exports = {

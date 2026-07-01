@@ -1,0 +1,106 @@
+Date : 2026-06-28 18:53:20
+Directory : c:\Users\bymaz\kinetic
+Total : 52 files,  21241 codes, 135 comments, 664 blanks, all 22040 lines
+
+Languages
++--------------------+------------+------------+------------+------------+------------+
+| language           | files      | code       | comment    | blank      | total      |
++--------------------+------------+------------+------------+------------+------------+
+| JSON               |          3 |     16,486 |          0 |          2 |     16,488 |
+| JavaScript         |         34 |      4,198 |        115 |        600 |      4,913 |
+| TypeScript JSX     |          6 |        409 |          3 |         29 |        441 |
+| TypeScript         |          4 |         69 |         15 |         16 |        100 |
+| JSON with Comments |          3 |         63 |          0 |          3 |         66 |
+| Markdown           |          1 |         14 |          0 |         13 |         27 |
+| Dotenv             |          1 |          2 |          2 |          1 |          5 |
++--------------------+------------+------------+------------+------------+------------+
+
+Directories
++----------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                           | files      | code       | comment    | blank      | total      |
++----------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                              |         52 |     21,241 |        135 |        664 |     22,040 |
+| . (Files)                                                      |         12 |     15,707 |          9 |         36 |     15,752 |
+| app                                                            |         34 |      4,463 |        101 |        598 |      5,162 |
+| app (Files)                                                    |          6 |        524 |         16 |         46 |        586 |
+| app\(tabs)                                                     |          4 |        363 |          3 |         20 |        386 |
+| app\config                                                     |          1 |         13 |          0 |          6 |         19 |
+| app\context                                                    |          1 |        114 |         13 |         22 |        149 |
+| app\controllers                                                |          3 |        214 |          8 |         44 |        266 |
+| app\middleware                                                 |          1 |         26 |          0 |          6 |         32 |
+| app\routes                                                     |          4 |         81 |          3 |         22 |        106 |
+| app\screen                                                     |          1 |        258 |          0 |         40 |        298 |
+| app\tabs                                                       |         13 |      2,870 |         58 |        392 |      3,320 |
+| app\tabs\about                                                 |          1 |          9 |          0 |          2 |         11 |
+| app\tabs\account                                               |          3 |        569 |         14 |         97 |        680 |
+| app\tabs\calculator                                            |          1 |        257 |          5 |         21 |        283 |
+| app\tabs\gym                                                   |          1 |        258 |          3 |         30 |        291 |
+| app\tabs\history                                               |          1 |        181 |          6 |         24 |        211 |
+| app\tabs\home                                                  |          3 |      1,142 |         17 |        149 |      1,308 |
+| app\tabs\library                                               |          2 |        368 |         13 |         50 |        431 |
+| app\tabs\routine                                               |          1 |         86 |          0 |         19 |        105 |
+| assets                                                         |          1 |        913 |          0 |          0 |        913 |
+| assets\data                                                    |          1 |        913 |          0 |          0 |        913 |
+| constants                                                      |          1 |         41 |          8 |          5 |         54 |
+| hooks                                                          |          3 |         28 |          7 |         11 |         46 |
+| scripts                                                        |          1 |         89 |         10 |         14 |        113 |
++----------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++----------------------------------------------------------------+--------------------+------------+------------+------------+------------+
+| filename                                                       | language           | code       | comment    | blank      | total      |
++----------------------------------------------------------------+--------------------+------------+------------+------------+------------+
+| c:\Users\bymaz\kinetic\.env                                    | Dotenv             |          2 |          2 |          1 |          5 |
+| c:\Users\bymaz\kinetic\App.js                                  | JavaScript         |         36 |          1 |          8 |         45 |
+| c:\Users\bymaz\kinetic\README.md                               | Markdown           |         14 |          0 |         13 |         27 |
+| c:\Users\bymaz\kinetic\app.json                                | JSON with Comments |         26 |          0 |          1 |         27 |
+| c:\Users\bymaz\kinetic\app\(tabs)\_layout.tsx                  | TypeScript JSX     |         42 |          0 |          1 |         43 |
+| c:\Users\bymaz\kinetic\app\(tabs)\explore.tsx                  | TypeScript JSX     |        109 |          0 |          4 |        113 |
+| c:\Users\bymaz\kinetic\app\(tabs)\history.tsx                  | TypeScript JSX     |          4 |          0 |          2 |          6 |
+| c:\Users\bymaz\kinetic\app\(tabs)\index.tsx                    | TypeScript JSX     |        208 |          3 |         13 |        224 |
+| c:\Users\bymaz\kinetic\app\MyNav.js                            | JavaScript         |        181 |          5 |         19 |        205 |
+| c:\Users\bymaz\kinetic\app\_layout.tsx                         | TypeScript JSX     |         20 |          0 |          5 |         25 |
+| c:\Users\bymaz\kinetic\app\backend.js                          | JavaScript         |         31 |          3 |          9 |         43 |
+| c:\Users\bymaz\kinetic\app\config\api.js                       | JavaScript         |         13 |          0 |          6 |         19 |
+| c:\Users\bymaz\kinetic\app\context\AuthContext.js              | JavaScript         |        114 |         13 |         22 |        149 |
+| c:\Users\bymaz\kinetic\app\controllers\auth.controller.js      | JavaScript         |        107 |          8 |         24 |        139 |
+| c:\Users\bymaz\kinetic\app\controllers\profile.controller.js   | JavaScript         |         53 |          0 |          9 |         62 |
+| c:\Users\bymaz\kinetic\app\controllers\progress.controller.js  | JavaScript         |         54 |          0 |         11 |         65 |
+| c:\Users\bymaz\kinetic\app\i18n.js                             | JavaScript         |        254 |          8 |          7 |        269 |
+| c:\Users\bymaz\kinetic\app\middleware\auth.middleware.js       | JavaScript         |         26 |          0 |          6 |         32 |
+| c:\Users\bymaz\kinetic\app\modal.tsx                           | TypeScript JSX     |         26 |          0 |          4 |         30 |
+| c:\Users\bymaz\kinetic\app\routes\auth.routes.js               | JavaScript         |         24 |          0 |          6 |         30 |
+| c:\Users\bymaz\kinetic\app\routes\gym.routes.js                | JavaScript         |         37 |          2 |          8 |         47 |
+| c:\Users\bymaz\kinetic\app\routes\profile.routes.js            | JavaScript         |         10 |          0 |          4 |         14 |
+| c:\Users\bymaz\kinetic\app\routes\progress.routes.js           | JavaScript         |         10 |          1 |          4 |         15 |
+| c:\Users\bymaz\kinetic\app\screen\ScreenHome.js                | JavaScript         |        258 |          0 |         40 |        298 |
+| c:\Users\bymaz\kinetic\app\subapaseClient.js                   | JavaScript         |         12 |          0 |          2 |         14 |
+| c:\Users\bymaz\kinetic\app\tabs\about\ScreenAbout.js           | JavaScript         |          9 |          0 |          2 |         11 |
+| c:\Users\bymaz\kinetic\app\tabs\account\ScreenEditProfile.js   | JavaScript         |        220 |          7 |         30 |        257 |
+| c:\Users\bymaz\kinetic\app\tabs\account\ScreenLogin.js         | JavaScript         |        166 |          4 |         32 |        202 |
+| c:\Users\bymaz\kinetic\app\tabs\account\ScreenSignUp.js        | JavaScript         |        183 |          3 |         35 |        221 |
+| c:\Users\bymaz\kinetic\app\tabs\calculator\ScreenCalculator.js | JavaScript         |        257 |          5 |         21 |        283 |
+| c:\Users\bymaz\kinetic\app\tabs\gym\ScreenGym.js               | JavaScript         |        258 |          3 |         30 |        291 |
+| c:\Users\bymaz\kinetic\app\tabs\history\ScreenHistory.js       | JavaScript         |        181 |          6 |         24 |        211 |
+| c:\Users\bymaz\kinetic\app\tabs\home\ScreenHistory.js          | JavaScript         |        604 |         10 |         76 |        690 |
+| c:\Users\bymaz\kinetic\app\tabs\home\ScreenHome.js             | JavaScript         |        300 |          3 |         41 |        344 |
+| c:\Users\bymaz\kinetic\app\tabs\home\perfilhome.js             | JavaScript         |        238 |          4 |         32 |        274 |
+| c:\Users\bymaz\kinetic\app\tabs\library\DetailLibrary.js       | JavaScript         |        107 |          2 |         19 |        128 |
+| c:\Users\bymaz\kinetic\app\tabs\library\ScreenLibrary.js       | JavaScript         |        261 |         11 |         31 |        303 |
+| c:\Users\bymaz\kinetic\app\tabs\routine\ScreenRoutine.js       | JavaScript         |         86 |          0 |         19 |        105 |
+| c:\Users\bymaz\kinetic\assets\data\traducciones.json           | JSON               |        913 |          0 |          0 |        913 |
+| c:\Users\bymaz\kinetic\constants\theme.ts                      | TypeScript         |         41 |          8 |          5 |         54 |
+| c:\Users\bymaz\kinetic\eas.json                                | JSON with Comments |         21 |          0 |          1 |         22 |
+| c:\Users\bymaz\kinetic\eslint.config.js                        | JavaScript         |          8 |          1 |          2 |         11 |
+| c:\Users\bymaz\kinetic\hooks\use-color-scheme.ts               | TypeScript         |          1 |          0 |          1 |          2 |
+| c:\Users\bymaz\kinetic\hooks\use-color-scheme.web.ts           | TypeScript         |         13 |          3 |          6 |         22 |
+| c:\Users\bymaz\kinetic\hooks\use-theme-color.ts                | TypeScript         |         14 |          4 |          4 |         22 |
+| c:\Users\bymaz\kinetic\index.js                                | JavaScript         |          3 |          3 |          3 |          9 |
+| c:\Users\bymaz\kinetic\metro.config.js                         | JavaScript         |          3 |          2 |          3 |          8 |
+| c:\Users\bymaz\kinetic\package-lock.json                       | JSON               |     15,488 |          0 |          1 |     15,489 |
+| c:\Users\bymaz\kinetic\package.json                            | JSON               |         85 |          0 |          1 |         86 |
+| c:\Users\bymaz\kinetic\scripts\reset-project.js                | JavaScript         |         89 |         10 |         14 |        113 |
+| c:\Users\bymaz\kinetic\server.js                               | JavaScript         |          5 |          0 |          1 |          6 |
+| c:\Users\bymaz\kinetic\tsconfig.json                           | JSON with Comments |         16 |          0 |          1 |         17 |
+| Total                                                          |                    |     21,241 |        135 |        664 |     22,040 |
++----------------------------------------------------------------+--------------------+------------+------------+------------+------------+

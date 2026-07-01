@@ -1,20 +1,33 @@
 const express = require("express");
 const router = express.Router();
+const authMiddleware = require("../middleware/auth.middleware");
 
-router.get("/nearby", async (req, res) => {
+// Aplicar middleware para que solo usuarios logueados puedan usar esta ruta
+router.get("/nearby", authMiddleware, async (req, res) => {
   const { lat, lng } = req.query;
-  if (!lat || !lng) return res.status(400).json({ message: "lat y lng requeridos" });
+  if (!lat || !lng) {
+    return res.status(400).json({ message: "lat y lng requeridos" });
+  }
+
+  // Leer la clave del API desde las variables de entorno para mayor seguridad
+  const apiKey = process.env.TOMTOM_API_KEY;
+  if (!apiKey) {
+    console.error("La clave de API de TomTom no está configurada en el archivo .env");
+    return res.status(500).json({ message: "Error de configuración del servidor." });
+  }
 
   try {
-   const url = `https://api.tomtom.com/search/2/search/gimnasio.json?lat=${lat}&lon=${lng}&radius=5000&limit=20&key=38r6oqYIM7Zxp8mhmPnanSfhZkB8QknU`;
+    const url = `https://api.tomtom.com/search/2/search/gimnasio.json?lat=${lat}&lon=${lng}&radius=5000&limit=20&key=${apiKey}`;
     const response = await fetch(url, {
       signal: AbortSignal.timeout(15000),
     });
 
-    const data = await response.json();
-    console.log("TomTom status:", response.status);
-    console.log("TomTom results:", data.results?.length);
+    if (!response.ok) {
+        throw new Error(`Error en la respuesta de TomTom API: ${response.statusText}`);
+    }
 
+    const data = await response.json();
+    
     const gyms = (data.results || []).map((place) => ({
       place_id: place.id,
       name: place.poi?.name || "Gimnasio",
@@ -26,7 +39,7 @@ router.get("/nearby", async (req, res) => {
 
     res.json({ gyms });
   } catch (e) {
-    console.log("Gym route error:", e.message);
+    console.error("Error en la ruta de gimnasios:", e.message);
     res.status(500).json({ message: "Error al buscar gimnasios", error: e.message });
   }
 });
