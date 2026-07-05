@@ -1,27 +1,66 @@
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
-import React, { useContext, useState } from "react";
+import * as Notifications from "expo-notifications";
+import React, { useContext, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  ActivityIndicator, Alert, Dimensions, Image,
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  Image,
   Modal,
   ScrollView,
-  StyleSheet, Text,
+  StyleSheet,
+  Text,
   TextInput,
-  TouchableOpacity, View
+  TouchableOpacity,
+  View
 } from "react-native";
 import { Switch } from "react-native-paper";
 
-// IMPORTACIÓN DIRECTA DE i18n y SUPABASE
 import { AuthContext } from "../../context/AuthContext";
 import i18n from "../../i18n";
 import { supabase } from "../../subapaseClient";
 
-const MyComponent = () => {
-  const [isSwitchOn, setIsSwitchOn] = React.useState(false);
-  const onToggleSwitch = () => setIsSwitchOn(!isSwitchOn);
-  return <Switch value={isSwitchOn} onValueChange={onToggleSwitch} theme={{ colors: { primary: '#88adff' } }} />;
+// ⚡ NUEVO: Interruptor inteligente que lee los permisos reales del teléfono
+const NotificationSwitch = ({ t }) => {
+  const [isSwitchOn, setIsSwitchOn] = useState(false);
+
+  // Verificar estado real de las notificaciones al cargar la pantalla
+  useEffect(() => {
+    Notifications.getPermissionsAsync().then(status => {
+      setIsSwitchOn(status.granted);
+    });
+  }, []);
+
+  const onToggleSwitch = async () => {
+    if (!isSwitchOn) {
+      // Intenta pedir permiso si estaba apagado
+      const { status } = await Notifications.requestPermissionsAsync();
+      setIsSwitchOn(status === 'granted');
+      if (status !== 'granted') {
+        Alert.alert(
+          t("permission_denied", "Permiso Denegado"), 
+          t("enable_notifications_settings", "Debes activar las notificaciones desde la configuración de tu teléfono.")
+        );
+      }
+    } else {
+      // Limitación de OS: No podemos "apagar" notificaciones desde la app, solo desde ajustes
+      Alert.alert(
+        t("system_settings", "Configuración de Sistema"), 
+        t("disable_notifications_settings", "Para desactivar las notificaciones por completo, por favor hazlo desde los ajustes de tu dispositivo.")
+      );
+    }
+  };
+
+  return (
+    <Switch 
+      value={isSwitchOn} 
+      onValueChange={onToggleSwitch} 
+      theme={{ colors: { primary: '#88adff' } }} 
+    />
+  );
 };
 
 export default function ProfileScreen() {
@@ -29,7 +68,6 @@ export default function ProfileScreen() {
   const { user, logout, updateAvatar } = useContext(AuthContext);
   const { t } = useTranslation(); 
   
-  // ESTADOS
   const [uploading, setUploading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [newPassword, setNewPassword] = useState("");
@@ -37,11 +75,8 @@ export default function ProfileScreen() {
 
   const profile = user?.profile;
   const avatarUrl = profile?.foto_url || profile?.avatar_url || null;
-  
-  // ⚡ CORREGIDO: Texto por defecto preparado para i18n
   const userName = profile?.nombre || user?.nombre || t("default_athlete", "Athlete");
 
-  // TRADUCTOR DINÁMICO DE NIVEL
   const obtenerNivelTraducido = (nivelBD) => {
     if (!nivelBD) return t("level_principiante", "BEGINNER").toUpperCase();
     const nivelLower = nivelBD.toLowerCase();
@@ -51,7 +86,6 @@ export default function ProfileScreen() {
     return nivelBD.toUpperCase();
   };
 
-  // TRADUCTOR DINÁMICO DE OBJETIVO
   const obtenerObjetivoTraducido = (objetivoBD) => {
     if (!objetivoBD) return t("obj_perder_grasa", "LOSE FAT").toUpperCase();
     const objLower = objetivoBD.toLowerCase();
@@ -150,7 +184,6 @@ export default function ProfileScreen() {
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
-        {/* AVATAR Y RANGO */}
         <View style={styles.profileSection}>
           <TouchableOpacity onPress={pickImage} style={styles.avatarContainer} disabled={uploading} activeOpacity={0.8}>
             {avatarUrl ? (
@@ -180,7 +213,6 @@ export default function ProfileScreen() {
         <Text style={styles.label}>{t("active_profile", "ACTIVE PROFILE").toUpperCase()}</Text>
         <Text style={styles.name}>{userName}</Text>
 
-        {/* CONTENEDOR DE MÉTRICAS */}
         <View style={styles.gridContainer}>
           <View style={styles.gridRow}>
             <View style={styles.gridItem}>
@@ -209,7 +241,6 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* PREFERENCIAS DEL SISTEMA */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>{t("system_preferences", "SYSTEM PREFERENCES")}</Text>
 
@@ -221,7 +252,8 @@ export default function ProfileScreen() {
                 <Text style={styles.rowSubtitle}>{t("alerts_milestones", "Alerts and reminders")}</Text>
               </View>
             </View>
-            <MyComponent />
+            {/* ⚡ Aquí inyectamos el nuevo Switch inteligente */}
+            <NotificationSwitch t={t} />
           </View>
 
           <TouchableOpacity style={styles.row} onPress={changeAppLanguage}>
@@ -246,7 +278,6 @@ export default function ProfileScreen() {
             <Ionicons name="chevron-forward" size={18} color="#747578" />
           </TouchableOpacity>
 
-          {/* ⚡ BOTÓN DE SEGURIDAD CORREGIDO */}
           <TouchableOpacity style={styles.row} onPress={() => setModalVisible(true)}>
             <View style={styles.rowLeft}>
               <MaterialIcons name="security" size={22} color="#88adff" />
@@ -266,7 +297,6 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </ScrollView>
 
-      {/* ⚡ MODAL MULTIPLATAFORMA PARA CONTRASEÑA */}
       <Modal visible={modalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
@@ -299,7 +329,6 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
-
     </View>
   );
 }
@@ -334,7 +363,6 @@ const styles = StyleSheet.create({
   logoutBtn: { marginTop: 20, flexDirection: "row", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(255, 113, 108, 0.3)", backgroundColor: "rgba(255, 113, 108, 0.05)", padding: 14, borderRadius: 12, gap: 8 },
   logoutText: { fontFamily: "Manrope_700Bold", color: "#ff716c", fontSize: 13 },
   
-  /* ESTILOS DEL MODAL */
   modalOverlay: { flex: 1, backgroundColor: "rgba(12,14,16,0.8)", justifyContent: "center", alignItems: "center" },
   modalContainer: { width: "85%", backgroundColor: "#171a1c", borderRadius: 14, padding: 22, borderWidth: 1, borderColor: "#24282c" },
   modalTitle: { fontFamily: "Lexend_700Bold", fontSize: 17, color: "#eeeef0", marginBottom: 8 },

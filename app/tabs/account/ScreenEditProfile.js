@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native'; // <-- 1. Importamos useNavigation
+import { useNavigation } from '@react-navigation/native';
 import React, { useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -10,10 +10,9 @@ import { supabase } from '../../subapaseClient';
 export default function ScreenEditProfile() {
   const { t } = useTranslation();
   const { user, updateUser } = useContext(AuthContext);
-  const navigation = useNavigation(); // <-- 2. Inicializamos la navegación
+  const navigation = useNavigation(); 
   const profile = user?.profile;
 
-  // Estados locales del formulario
   const [nombre, setNombre] = useState("");
   const [edad, setEdad] = useState("");
   const [peso, setPeso] = useState("");
@@ -24,7 +23,6 @@ export default function ScreenEditProfile() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Mapeo estructurado para traducir dinámicamente las opciones sin romper la Base de Datos
   const opcionesNivel = [
     { id: "Principiante", labelKey: "level_principiante" },
     { id: "Intermedio", labelKey: "level_intermedio" },
@@ -38,7 +36,6 @@ export default function ScreenEditProfile() {
     { id: "Resistencia", labelKey: "obj_resistencia" },
   ];
 
-  // Rellenar el formulario con los datos reales del usuario al cargar la pantalla
   useEffect(() => {
     if (profile) {
       setNombre(profile.nombre || user?.nombre || "");
@@ -56,7 +53,6 @@ export default function ScreenEditProfile() {
     try {
       setIsSaving(true);
 
-      // 1. Actualizar directamente en la base de datos de Supabase
       const { error } = await supabase
         .from("perfiles")
         .update({
@@ -71,9 +67,10 @@ export default function ScreenEditProfile() {
 
       if (error) throw error;
 
-      // 2. Sincronizar el estado global en React para refrescar el Home al instante
+      // ⚡ CORRECCIÓN DET-06: Incorporamos `...profile` para no borrar la URL de la foto en el estado local
       updateUser({
         profile: {
+          ...profile,
           nombre,
           edad: parseInt(edad) || null,
           peso_kg: parseFloat(peso) || null,
@@ -83,14 +80,13 @@ export default function ScreenEditProfile() {
         }
       });
 
-      // 3. Alerta con redirección automática al presionar "OK"
       Alert.alert(
         t("success"), 
         t("profile_updated"),
         [
           { 
             text: "OK", 
-            onPress: () => navigation.goBack() // Regresa automáticamente a PerfilHome
+            onPress: () => navigation.goBack() 
           }
         ]
       );
@@ -102,7 +98,6 @@ export default function ScreenEditProfile() {
     }
   };
 
-  // Buscar la traducción del objetivo seleccionado para el header del Dropdown
   const objetivoActualSeleccionado = opcionesObjetivos.find(item => item.id === objetivo);
 
   return (
@@ -157,7 +152,6 @@ export default function ScreenEditProfile() {
 
         <Text style={[styles.sectionLabel, { marginTop: 20 }]}>{t("workout_config")}</Text>
 
-        {/* Selector de Nivel Traducible */}
         <Text style={styles.inputLabel}>{t("exp_level")}</Text>
         <View style={styles.pillRow}>
           {opcionesNivel.map((item) => (
@@ -173,7 +167,6 @@ export default function ScreenEditProfile() {
           ))}
         </View>
 
-        {/* Desplegable de Objetivo Traducible */}
         <Text style={styles.inputLabel}>{t("workout_objective")}</Text>
         
         <TouchableOpacity 
@@ -213,7 +206,6 @@ export default function ScreenEditProfile() {
           </View>
         )}
 
-        {/* Botón de Guardar Dinámico */}
         <TouchableOpacity style={styles.saveBtn} onPress={guardarCambios} disabled={isSaving}>
           {isSaving ? (
             <ActivityIndicator size="small" color="#0c0e10" />

@@ -21,7 +21,6 @@ export default function LoginScreen({ navigation }) {
 
             if (error) throw error;
         } catch (error) {
-            // ⚡ Textos de respaldo en inglés
             Alert.alert(t("login_error", "Login Error"), error.message);
         } finally {
             setLoading(false);
@@ -37,7 +36,12 @@ export default function LoginScreen({ navigation }) {
             return;
         }
         try {
-            const { error } = await supabase.auth.resetPasswordForEmail(email);
+            const redirectUrl = 'kinetic://reset-password';
+
+            const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: redirectUrl,
+            });
+            
             if (error) throw error;
             Alert.alert(
                 t("email_sent", "Email Sent"), 
@@ -54,7 +58,6 @@ export default function LoginScreen({ navigation }) {
 
             <View style={styles.card}>
                 <View style={styles.inputBlock}>
-                    {/* ⚡ Textos de respaldo en inglés */}
                     <Text style={styles.label}>{t("email_label", "EMAIL").toUpperCase()}</Text>
                     <TextInput
                         value={email}

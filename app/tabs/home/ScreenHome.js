@@ -9,12 +9,10 @@ import { AuthContext } from "../../context/AuthContext";
 import i18n from "../../i18n";
 import { supabase } from "../../subapaseClient";
 
-// --- NORMALIZACIÓN DEL DICCIONARIO ---
 const diccNormalizado = Object.keys(traducciones).reduce((acc, key) => {
   acc[key.toLowerCase().trim()] = traducciones[key];
   return acc;
 }, {});
-// -------------------------------------
 
 export default function ScreenHome() {
   const navigation = useNavigation();
@@ -22,8 +20,6 @@ export default function ScreenHome() {
   const { t } = useTranslation();
 
   const [loading, setLoading] = useState(true);
-  
-  const [localProfile, setLocalProfile] = useState(null);
   const [historyData, setHistoryData] = useState([]);
   const [chartData, setChartData] = useState([]);
   const [weeklyStats, setWeeklyStats] = useState({ kcal: 0, minutes: 0, streak: 0 });
@@ -59,27 +55,16 @@ export default function ScreenHome() {
 
   useFocusEffect(
     useCallback(() => {
-      const fetchAllData = async () => {
+      const fetchProgressData = async () => {
         try {
           setLoading(true);
           
-          const { data: { user: supabaseUser } } = await supabase.auth.getUser();
-          if (!supabaseUser) throw new Error("Usuario no autenticado");
-
-          const { data: profileData, error: profileError } = await supabase
-            .from("perfiles")
-            .select("*")
-            .eq("usuario_id", supabaseUser.id)
-            .single();
-
-          if (!profileError && profileData) {
-            setLocalProfile(profileData);
-          }
+          if (!user?.id) return;
 
           const { data: progressData, error: progressError } = await supabase
             .from("registro_progreso")
             .select("*")
-            .eq("usuario_id", supabaseUser.id)
+            .eq("usuario_id", user.id)
             .order("fecha", { ascending: false });
 
           if (progressError) throw progressError;
@@ -96,7 +81,6 @@ export default function ScreenHome() {
                 : (curr.nombre_ejercicio || "Exercise").toUpperCase();
 
             acc[date].ejercicios.add(nombreTraducido);
-            
             return acc;
           }, {});
 
@@ -146,20 +130,21 @@ export default function ScreenHome() {
           setHistoryData(historialReciente);
 
         } catch (error) {
-          console.error("Error cargando Home:", error.message);
+          console.error("Error cargando el progreso del Home:", error.message);
         } finally {
           setLoading(false);
         }
       };
 
-      fetchAllData();
-    }, [lang])
+      fetchProgressData();
+    }, [lang, user?.id])
   );
 
-  const userName = localProfile?.nombre || user?.nombre || user?.email?.split("@")[0] || "Atleta";
-  const avatarUrl = localProfile?.foto_url || localProfile?.avatar_url || user?.profile?.avatar_url || null;
-  const rawLevel = localProfile?.nivel_experiencia || localProfile?.nivel || user?.profile?.nivel || "Principiante";
-  const objetivoUsuario = localProfile?.objetivo || "No definido";
+  // LECTURA DIRECTA DEL CONTEXTO GLOBAL (Sincronización Automática)
+  const userName = user?.profile?.nombre || user?.email?.split("@")[0] || "Atleta";
+  const avatarUrl = user?.profile?.foto_url || user?.profile?.avatar_url || null;
+  const rawLevel = user?.profile?.nivel_experiencia || user?.profile?.nivel || "Principiante";
+  const objetivoUsuario = user?.profile?.objetivo || "No definido";
 
   if (loading) {
     return (
@@ -238,7 +223,6 @@ export default function ScreenHome() {
         </View>
       </View>
 
-      {/* AQUÍ TAMBIÉN CORREGÍ LA RUTA PARA QUE VAYA A "PROGRESS" */}
       <TouchableOpacity style={styles.progressWidget} onPress={() => navigation.navigate("PROGRESS")} >
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <AwesomeIcon name="trending-up" size={22} color="#88adff" />
@@ -256,7 +240,6 @@ export default function ScreenHome() {
             <TouchableOpacity 
               key={idx} 
               style={styles.historyItem} 
-              // 👇 AQUÍ ESTÁ LA CORRECCIÓN CLAVE: SE LLAMA "PROGRESS" EN TU NAVEGADOR
               onPress={() => navigation.navigate("PROGRESS", { date: session.day })}
             >
               <View style={styles.historyIconBox}>
