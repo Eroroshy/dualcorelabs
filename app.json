@@ -16,7 +16,8 @@
         "foregroundImage": "./assets/kinetic.jpg",
         "backgroundColor": "#0c0e10"
       },
-      "package": "com.kinetic"
+      "package": "com.kinetic",
+      "googleServicesFile": "./google-services.json"
     },
     "extra": {
       "eas": {

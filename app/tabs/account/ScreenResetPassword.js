@@ -1,10 +1,13 @@
 import { useNavigation, useRoute } from '@react-navigation/native';
 import * as Linking from 'expo-linking';
-import { useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { TextInput } from 'react-native-paper';
 
 import { supabase } from '../../subapaseClient';
+// ⚡ Asegúrate de que esta ruta apunte correctamente a tu AuthContext
+import { AuthContext } from '../../context/AuthContext';
 
 const parseParamsFromUrl = async () => {
   const url = await Linking.getInitialURL();
@@ -19,6 +22,10 @@ const parseParamsFromUrl = async () => {
 export default function ScreenResetPassword() {
   const navigation = useNavigation();
   const route = useRoute();
+  const { t } = useTranslation();
+  
+  // ⚡ Traemos la llave de la bóveda desde tu contexto
+  const { setNeedsPasswordReset } = useContext(AuthContext);
 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -54,7 +61,7 @@ export default function ScreenResetPassword() {
         }
       } catch (error) {
         if (mounted) {
-          Alert.alert('Error', error.message || 'No se pudo abrir el enlace de recuperación.');
+          Alert.alert(t('error', 'Error'), error.message || t('error_recovery_link', 'No se pudo abrir el enlace de recuperación.'));
         }
       } finally {
         if (mounted) {
@@ -72,12 +79,12 @@ export default function ScreenResetPassword() {
 
   const handleUpdatePassword = async () => {
     if (newPassword.length < 6) {
-      Alert.alert('Error', 'La contraseña debe tener al menos 6 caracteres.');
+      Alert.alert(t('error', 'Error'), t('error_password_length', 'La contraseña debe tener al menos 6 caracteres.'));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      Alert.alert('Error', 'Las contraseñas no coinciden.');
+      Alert.alert(t('error', 'Error'), t('error_password_match', 'Las contraseñas no coinciden.'));
       return;
     }
 
@@ -86,27 +93,35 @@ export default function ScreenResetPassword() {
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
 
+      Alert.alert(t('success', 'Éxito'), t('success_password_updated', 'Tu contraseña fue actualizada. Ahora puedes iniciar sesión de nuevo.'));
+      
+      // ⚡ 1. Quitamos el candado de seguridad
+      setNeedsPasswordReset(false);
+      
+      // ⚡ 2. Cerramos la sesión (Esto lo mandará automáticamente de vuelta al Login normal)
       await supabase.auth.signOut();
-      Alert.alert('Éxito', 'Tu contraseña fue actualizada. Ahora puedes iniciar sesión de nuevo.');
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Login' }],
-      });
+      
     } catch (error) {
-      Alert.alert('Error', error.message);
+      Alert.alert(t('error', 'Error'), error.message);
     } finally {
       setSubmitting(false);
     }
   };
 
+  // ⚡ Botón de escape seguro
+  const handleCancelAndLogout = async () => {
+    setNeedsPasswordReset(false);
+    await supabase.auth.signOut();
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.brand}>K I N E T I C</Text>
-      <Text style={styles.title}>Restablecer contraseña</Text>
+      <Text style={styles.title}>{t('reset_password_title', 'Restablecer contraseña')}</Text>
       <Text style={styles.subtitle}>
         {sessionReady
-          ? 'Escribe la nueva contraseña de tu cuenta.'
-          : 'Estamos validando tu enlace de recuperación...'}
+          ? t('reset_password_subtitle', 'Escribe la nueva contraseña de tu cuenta.')
+          : t('reset_password_validating', 'Estamos validando tu enlace de recuperación...')}
       </Text>
 
       <View style={styles.card}>
@@ -116,7 +131,7 @@ export default function ScreenResetPassword() {
           secureTextEntry
           style={styles.input}
           mode="flat"
-          placeholder="Nueva contraseña"
+          placeholder={t('reset_password_new', 'Nueva contraseña')}
           placeholderTextColor="#6e7277"
           textColor="#fff"
           activeUnderlineColor="#88adff"
@@ -129,7 +144,7 @@ export default function ScreenResetPassword() {
           secureTextEntry
           style={styles.input}
           mode="flat"
-          placeholder="Confirmar contraseña"
+          placeholder={t('reset_password_confirm', 'Confirmar contraseña')}
           placeholderTextColor="#6e7277"
           textColor="#fff"
           activeUnderlineColor="#88adff"
@@ -143,12 +158,12 @@ export default function ScreenResetPassword() {
           style={[styles.button, (!sessionReady || submitting || loading) && styles.buttonDisabled]}
         >
           <Text style={styles.buttonText}>
-            {submitting ? 'GUARDANDO...' : 'ACTUALIZAR CONTRASEÑA'}
+            {submitting ? t('saving', 'GUARDANDO...') : t('update_password', 'ACTUALIZAR CONTRASEÑA')}
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.linkButton}>
-          <Text style={styles.linkText}>Volver al inicio de sesión</Text>
+        <TouchableOpacity onPress={handleCancelAndLogout} style={styles.linkButton}>
+          <Text style={styles.linkText}>{t('cancel_and_logout', 'Cancelar y cerrar sesión')}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -215,7 +230,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   linkText: {
-    color: '#88adff',
+    color: '#ff716c', // Puse un color rojizo/salmón para denotar que es una acción de cierre/cancelación
     fontFamily: 'Manrope_600SemiBold',
   },
 });

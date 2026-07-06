@@ -1,8 +1,10 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, FlatList, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, FlatList, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Searchbar } from 'react-native-paper';
+// ⚡ Importación de la librería moderna para renderizar GIFs correctamente
+import { Image } from 'expo-image';
 
 // Función para traducir textos individuales en tiempo real
 const traducirAlEspanol = async (texto) => {
@@ -41,8 +43,8 @@ const KEYWORDS_MULTIPLES = {
   'shoulders': ['shoulder', 'deltoid'],
   'arms': ['arm', 'bicep', 'tricep', 'forearm'],
   'legs': ['leg', 'squat', 'calf', 'glute'],
-  'core': ['crunch', 'plank', 'abs', 'sit-up'], // Traerá una variedad real de abdomen
-  'cardio': ['jump', 'run', 'cardio', 'rope']    // Traerá saltos, carreras y cuerdas
+  'core': ['crunch', 'plank', 'abs', 'sit-up'], 
+  'cardio': ['jump', 'run', 'cardio', 'rope']    
 };
 
 export default function ScreenLibrary() {
@@ -74,11 +76,10 @@ export default function ScreenLibrary() {
           listaOriginal = result.data ? result.data : (Array.isArray(result) ? result : []);
         }
       } 
-      // 2. FUNCIÓN DE MULTI-LLAMADO EN PARALELO (Tu excelente idea)
+      // 2. FUNCIÓN DE MULTI-LLAMADO EN PARALELO
       else if (activeFilter !== "all") {
         const palabrasClave = KEYWORDS_MULTIPLES[activeFilter] || [activeFilter];
 
-        // Mapeamos cada palabra a una petición fetch individual
         const peticiones = palabrasClave.map(async (kw) => {
           try {
             const response = await fetch(`https://oss.exercisedb.dev/api/v1/exercises/search?search=${kw}`);
@@ -90,10 +91,8 @@ export default function ScreenLibrary() {
           }
         });
 
-        // Resolvemos todas las llamadas al mismo tiempo (Ultra rápido)
         const resultadosCombinados = await Promise.all(peticiones);
         
-        // Juntamos todos los arreglos y eliminamos duplicados usando el ID único del ejercicio
         const mapaSinDuplicados = new Map();
         resultadosCombinados.flat().forEach(item => {
           const idUnico = item.exerciseId || item.id;
@@ -113,7 +112,6 @@ export default function ScreenLibrary() {
         }
       }
       
-      // Filtramos un máximo de 30 ejercicios para proteger la cuota de Google Translate
       listaOriginal = listaOriginal.slice(0, 30);
 
       // Si la app está en español, traducimos la lista unificada
@@ -188,9 +186,12 @@ export default function ScreenLibrary() {
       onPress={() => navigation.navigate("Más Detalles", { id: item.exerciseId || item.id })}
     >
       <View style={styles.imageContainer}>
+        {/* ⚡ Componente optimizado para GIFs */}
         <Image
           source={{ uri: item.gifUrl || "https://upload.wikimedia.org/wikipedia/commons/a/a3/Image-not-found.png" }}
           style={styles.image}
+          contentFit="cover"
+          transition={400}
         />
         <View style={styles.overlay} />
 

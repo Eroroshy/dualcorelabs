@@ -65,13 +65,22 @@ const NotificationSwitch = ({ t }) => {
 
 export default function ProfileScreen() {
   const navigation = useNavigation();
-  const { user, logout, updateAvatar } = useContext(AuthContext);
+  // ⚡ SE AGREGARON needsPasswordReset Y setNeedsPasswordReset
+  const { user, logout, updateAvatar, needsPasswordReset, setNeedsPasswordReset } = useContext(AuthContext);
   const { t } = useTranslation(); 
   
   const [uploading, setUploading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [isUpdatingPwd, setIsUpdatingPwd] = useState(false);
+
+  // ⚡ NUEVO: EFECTO PARA ABRIR EL MODAL AUTOMÁTICAMENTE
+  useEffect(() => {
+    if (needsPasswordReset) {
+      setModalVisible(true);
+      setNeedsPasswordReset(false); // Reseteamos la bandera para que no se cicle
+    }
+  }, [needsPasswordReset, setNeedsPasswordReset]);
 
   const profile = user?.profile;
   const avatarUrl = profile?.foto_url || profile?.avatar_url || null;

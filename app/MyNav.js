@@ -1,9 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import AwesomeIcon from "@react-native-vector-icons/material-design-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { useNavigation } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import * as Linking from "expo-linking";
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -32,39 +33,9 @@ const Stack = createStackNavigator();
 export function MyNavigation() {
   const { user, loading: authLoading } = useContext(AuthContext);
   
-  // ⚡ Estado para saber a dónde mandarte al iniciar sesión desde el correo
-  const [targetAppRoute, setTargetAppRoute] = useState("Tabs"); 
-  
   const [onboardingReady, setOnboardingReady] = useState(false);
   const [shouldShowOnboarding, setShouldShowOnboarding] = useState(false);
   const [onboardingStorageKey, setOnboardingStorageKey] = useState(null);
-
-  // Escuchar Deep Links para redirigir a Reset Password
-  useEffect(() => {
-    let mounted = true;
-
-    const handleUrl = (url) => {
-      if (!mounted || !url) return;
-      const parsed = Linking.parse(url);
-      const path = parsed.path || "";
-      
-      // Si el enlace de recuperación trae al usuario, configuramos la ruta objetivo
-      if (path.includes("reset-password")) {
-        setTargetAppRoute("ResetPassword");
-      }
-    };
-
-    Linking.getInitialURL().then(handleUrl);
-
-    const subscription = Linking.addEventListener("url", ({ url }) => {
-      handleUrl(url);
-    });
-
-    return () => {
-      mounted = false;
-      subscription.remove();
-    };
-  }, []);
 
   // Verificar Onboarding
   useEffect(() => {
@@ -116,8 +87,7 @@ export function MyNavigation() {
     );
   }
 
-  // 🔐 Flujo dinámico: Pasa la ruta objetivo al AppStack
-  return user ? <AppStack initialRoute={targetAppRoute} /> : <AuthStack />;
+  return user ? <AppStack /> : <AuthStack />;
 }
 
 // 🔐 Flujo de Autenticación (No logueado)
@@ -131,10 +101,38 @@ function AuthStack() {
 }
 
 // 📱 Stack Principal de la Aplicación (Logueado)
-function AppStack({ initialRoute = "Tabs" }) {
+function AppStack() {
+  const navigation = useNavigation();
+  const hasRedirected = useRef(false); // Seguro para no redirigir dos veces
+
+  // ⚡ EL DETECTOR INFALIBLE DE LA CONTRASEÑA DIRECTO EN EL NAVEGADOR
+  useEffect(() => {
+    const interceptPasswordLink = (url) => {
+      if (!url || hasRedirected.current) return;
+      
+      // Si la URL contiene nuestra palabra clave del correo
+      if (url.includes("reset-password") || url.includes("type=recovery")) {
+        hasRedirected.current = true;
+        
+        // Esperamos medio segundo exacto para que el Home termine de construirse en pantalla
+        setTimeout(() => {
+          navigation.navigate("ResetPassword");
+        }, 500);
+      }
+    };
+
+    // Caso 1: La app estaba cerrada por completo y el link la abrió
+    Linking.getInitialURL().then(interceptPasswordLink);
+
+    // Caso 2: La app estaba escondida en segundo plano y el link la trajo al frente
+    const subscription = Linking.addEventListener("url", ({ url }) => interceptPasswordLink(url));
+
+    return () => subscription.remove();
+  }, [navigation]);
+
   return (
     <Stack.Navigator
-      initialRouteName={initialRoute}
+      initialRouteName="Tabs"
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: '#0c0e10' },
@@ -142,7 +140,6 @@ function AppStack({ initialRoute = "Tabs" }) {
     >
       <Stack.Screen name="Tabs" component={AppTabs} />
       
-      {/* Pantalla de Reseteo (Ahora vive en el área segura) */}
       <Stack.Screen 
         name="ResetPassword" 
         component={ResetPasswordScreen} 
@@ -177,7 +174,7 @@ function AppTabs() {
   const tabBarBottom = Math.max(insets.bottom, 8) + 8;
   const { t } = useTranslation(); 
   const { user } = useContext(AuthContext);
-  
+
   const rawRole = user?.profile?.rol || 'user';
   const userRole = rawRole.toLowerCase().trim(); 
   const isAdminOrTester = userRole === 'admin' || userRole === 'tester';

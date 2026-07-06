@@ -6,10 +6,9 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Linking from 'expo-linking';
 import * as Notifications from 'expo-notifications';
 import React, { createContext, useEffect, useState } from "react";
-import { Platform } from 'react-native';
+import { Alert, Platform } from 'react-native';
 import { supabase } from "../subapaseClient";
 
-// Configuración global de cómo se muestran las notificaciones cuando la app está abierta
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -23,57 +22,81 @@ export const AuthContext = createContext({});
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [needsPasswordReset, setNeedsPasswordReset] = useState(false);
 
-  // ⚡ LÓGICA PRO: REGISTRO DE NOTIFICACIONES PUSH
+  // ⚡ LÓGICA DE NOTIFICACIONES (SILENCIOSA EN ÉXITO)
   const registerForPushNotificationsAsync = async (userId) => {
-    let token;
+    try {
+      let token;
+      if (Platform.OS === 'android') {
+        await Notifications.setNotificationChannelAsync('default', {
+          name: 'default',
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: '#88adff',
+        });
+      }
 
-    if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('default', {
-        name: 'default',
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#88adff',
-      });
+      if (Device.isDevice) {
+        const { status: existingStatus } = await Notifications.getPermissionsAsync();
+        let finalStatus = existingStatus;
+        if (existingStatus !== 'granted') {
+          const { status } = await Notifications.requestPermissionsAsync();
+          finalStatus = status;
+        }
+        
+        if (finalStatus !== 'granted') {
+          Alert.alert("Aviso Notificaciones", "Permiso denegado. Actívalas en ajustes del celular.");
+          return;
+        }
+        
+        // EXTRAER PROJECT ID
+        const projectId = Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
+        if (!projectId) {
+            Alert.alert("Error Crítico", "Falta el projectId de EAS. Revisa tu app.json");
+            return;
+        }
+
+        const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
+        token = tokenData.data;
+        
+        if (token && userId) {
+          const { error } = await supabase
+            .from('perfiles')
+            .update({ push_token: token })
+            .eq('usuario_id', userId); 
+            
+          if (error) {
+              console.error("Error Supabase guardando token:", error.message);
+          } else {
+              // 🤫 Silencioso para el usuario, visible solo para el desarrollador
+              console.log("¡Notificaciones Listas! Token guardado en base de datos con éxito.");
+          }
+        }
+      } else {
+        console.log('Las notificaciones necesitan dispositivo físico.');
+      }
+      return token;
+    } catch (error) {
+      console.error("Error Fatal Notificaciones:", error.message);
     }
-
-    if (Device.isDevice) {
-      const { status: existingStatus } = await Notifications.getPermissionsAsync();
-      let finalStatus = existingStatus;
-      if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
-      }
-      if (finalStatus !== 'granted') {
-        console.log('Permiso de notificaciones denegado.');
-        return;
-      }
-      
-      const projectId = Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
-      token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
-      
-      // Guardar el token en Supabase para este usuario
-      if (token) {
-        await supabase
-          .from('perfiles')
-          .update({ push_token: token })
-          .eq('usuario_id', userId);
-      }
-    } else {
-      console.log('Las notificaciones Push necesitan un dispositivo físico (no funciona en emuladores).');
-    }
-
-    return token;
   };
 
-  // ⚡ Interceptor de Deep Links
+  // ⚡ INTERCEPTOR DE DEEP LINKS (CONTRASEÑA)
   useEffect(() => {
     const processDeepLink = async (url) => {
       if (!url) return;
+      
+      const type = url.match(/type=([^&]+)/)?.[1];
       const accessToken = url.match(/access_token=([^&]+)/)?.[1];
       const refreshToken = url.match(/refresh_token=([^&]+)/)?.[1];
       const parsed = Linking.parse(url);
       const code = parsed.queryParams?.code;
+
+      if (type === 'recovery') {
+        console.log("¡Enlace de recuperación detectado!");
+        setNeedsPasswordReset(true);
+      }
 
       if (accessToken && refreshToken) {
         try {
@@ -85,20 +108,21 @@ export const AuthProvider = ({ children }) => {
         } catch (error) { console.error("Error código:", error); }
       }
     };
-
     Linking.getInitialURL().then(processDeepLink);
     const subscription = Linking.addEventListener('url', ({ url }) => processDeepLink(url));
     return () => subscription.remove();
   }, []);
 
-  // Listener de autenticación activa
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       try {
+        if (event === 'PASSWORD_RECOVERY') {
+          setNeedsPasswordReset(true);
+        }
+
         if (session) {
           await fetchUserProfile(session.user);
-          // Pedir permisos y registrar token cada vez que inician sesión
-          registerForPushNotificationsAsync(session.user.id);
+          await registerForPushNotificationsAsync(session.user.id);
         } else {
           setUser(null);
         }
@@ -108,21 +132,17 @@ export const AuthProvider = ({ children }) => {
         setLoading(false); 
       }
     });
-
     return () => authListener?.subscription?.unsubscribe();
   }, []);
 
-  // Descarga del perfil con CACHÉ OFFLINE
   const fetchUserProfile = async (supabaseUser) => {
     try {
       const { data: profile, error } = await supabase.from("perfiles").select("*").eq("usuario_id", supabaseUser.id).single();
       if (error && error.code !== "PGRST116") throw error; 
-
       const finalUser = { id: supabaseUser.id, email: supabaseUser.email, user_metadata: supabaseUser.user_metadata, profile: profile || null };
       await AsyncStorage.setItem('@offline_user_profile', JSON.stringify(finalUser));
       setUser(finalUser);
     } catch (err) {
-      console.warn("Offline fallback", err.message);
       const cachedData = await AsyncStorage.getItem('@offline_user_profile');
       if (cachedData) setUser(JSON.parse(cachedData));
       else setUser({ id: supabaseUser.id, email: supabaseUser.email, user_metadata: supabaseUser.user_metadata, profile: null });
@@ -168,7 +188,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, logout, updateUser, updateAvatar }}>
+    <AuthContext.Provider value={{ user, loading, logout, updateUser, updateAvatar, needsPasswordReset, setNeedsPasswordReset }}>
       {children}
     </AuthContext.Provider>
   );
