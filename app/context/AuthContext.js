@@ -50,7 +50,6 @@ export const AuthProvider = ({ children }) => {
           return;
         }
         
-        // EXTRAER PROJECT ID
         const projectId = Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
         if (!projectId) {
             Alert.alert("Error Crítico", "Falta el projectId de EAS. Revisa tu app.json");
@@ -69,7 +68,6 @@ export const AuthProvider = ({ children }) => {
           if (error) {
               console.error("Error Supabase guardando token:", error.message);
           } else {
-              // 🤫 Silencioso para el usuario, visible solo para el desarrollador
               console.log("¡Notificaciones Listas! Token guardado en base de datos con éxito.");
           }
         }
@@ -82,7 +80,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ⚡ INTERCEPTOR DE DEEP LINKS (CONTRASEÑA)
+  // ⚡ INTERCEPTOR DE DEEP LINKS MANUAL (Por si Supabase tarda en reaccionar)
   useEffect(() => {
     const processDeepLink = async (url) => {
       if (!url) return;
@@ -93,8 +91,8 @@ export const AuthProvider = ({ children }) => {
       const parsed = Linking.parse(url);
       const code = parsed.queryParams?.code;
 
-      if (type === 'recovery') {
-        console.log("¡Enlace de recuperación detectado!");
+      if (type === 'recovery' || url.includes("reset-password")) {
+        console.log("¡Enlace de recuperación detectado vía URL!");
         setNeedsPasswordReset(true);
       }
 
@@ -108,15 +106,18 @@ export const AuthProvider = ({ children }) => {
         } catch (error) { console.error("Error código:", error); }
       }
     };
+    
     Linking.getInitialURL().then(processDeepLink);
     const subscription = Linking.addEventListener('url', ({ url }) => processDeepLink(url));
     return () => subscription.remove();
   }, []);
 
+  // ⚡ LISTENER OFICIAL DE SUPABASE
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       try {
         if (event === 'PASSWORD_RECOVERY') {
+          console.log("¡Supabase detectó PASSWORD_RECOVERY!");
           setNeedsPasswordReset(true);
         }
 

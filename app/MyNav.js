@@ -1,10 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import AwesomeIcon from "@react-native-vector-icons/material-design-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { useNavigation } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
-import * as Linking from "expo-linking";
-import React, { useContext, useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -31,7 +29,7 @@ const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
 export function MyNavigation() {
-  const { user, loading: authLoading } = useContext(AuthContext);
+  const { user, loading: authLoading, needsPasswordReset } = useContext(AuthContext);
   
   const [onboardingReady, setOnboardingReady] = useState(false);
   const [shouldShowOnboarding, setShouldShowOnboarding] = useState(false);
@@ -70,6 +68,7 @@ export function MyNavigation() {
     };
   }, [authLoading, user?.id]);
 
+  // 1. PANTALLA DE CARGA
   if (authLoading || (user && !onboardingReady)) {
     return (
       <View style={styles.loadingScreen}>
@@ -78,6 +77,13 @@ export function MyNavigation() {
     );
   }
 
+  // 2. ⚡ BÓVEDA DE SEGURIDAD (PRIORIDAD ABSOLUTA)
+  // Si detectamos el link de reseteo, bloqueamos todo lo demás.
+  if (needsPasswordReset) {
+    return <ForceResetStack />;
+  }
+
+  // 3. ONBOARDING
   if (user && shouldShowOnboarding) {
     return (
       <ScreenOnboarding
@@ -87,7 +93,29 @@ export function MyNavigation() {
     );
   }
 
+  // 4. NAVEGACIÓN NORMAL (Logueado o No Logueado)
   return user ? <AppStack /> : <AuthStack />;
+}
+
+// 🔐 Bóveda Infranqueable (Sin flecha hacia atrás, sin tabs)
+function ForceResetStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#0c0e10' } }}>
+      <Stack.Screen 
+        name="ResetPassword" 
+        component={ResetPasswordScreen}
+        options={{
+          headerShown: true,
+          title: 'Cambiar Contraseña',
+          headerStyle: { backgroundColor: '#111416', borderBottomColor: '#24282c', borderBottomWidth: 1 },
+          headerTintColor: '#fff',
+          headerTitleStyle: { color: '#fff', fontFamily: 'Lexend_700Bold' },
+          headerLeft: () => null, // 🚀 ELIMINA LA FLECHA EN IOS Y ANDROID
+          gestureEnabled: false, // Evita que en iOS cierren la pantalla deslizando
+        }}
+      />
+    </Stack.Navigator>
+  );
 }
 
 // 🔐 Flujo de Autenticación (No logueado)
@@ -102,34 +130,9 @@ function AuthStack() {
 
 // 📱 Stack Principal de la Aplicación (Logueado)
 function AppStack() {
-  const navigation = useNavigation();
-  const hasRedirected = useRef(false); // Seguro para no redirigir dos veces
-
-  // ⚡ EL DETECTOR INFALIBLE DE LA CONTRASEÑA DIRECTO EN EL NAVEGADOR
-  useEffect(() => {
-    const interceptPasswordLink = (url) => {
-      if (!url || hasRedirected.current) return;
-      
-      // Si la URL contiene nuestra palabra clave del correo
-      if (url.includes("reset-password") || url.includes("type=recovery")) {
-        hasRedirected.current = true;
-        
-        // Esperamos medio segundo exacto para que el Home termine de construirse en pantalla
-        setTimeout(() => {
-          navigation.navigate("ResetPassword");
-        }, 500);
-      }
-    };
-
-    // Caso 1: La app estaba cerrada por completo y el link la abrió
-    Linking.getInitialURL().then(interceptPasswordLink);
-
-    // Caso 2: La app estaba escondida en segundo plano y el link la trajo al frente
-    const subscription = Linking.addEventListener("url", ({ url }) => interceptPasswordLink(url));
-
-    return () => subscription.remove();
-  }, [navigation]);
-
+  // Nota: Eliminamos el useEffect interceptor de aquí, ahora vive en AuthContext y manda
+  // en la raíz del árbol de navegación.
+  
   return (
     <Stack.Navigator
       initialRouteName="Tabs"
@@ -140,8 +143,10 @@ function AppStack() {
     >
       <Stack.Screen name="Tabs" component={AppTabs} />
       
+      {/* Puedes mantener esta ruta si alguna vez quieres que el usuario 
+          cambie su contraseña desde su perfil (sin el link del correo) */}
       <Stack.Screen 
-        name="ResetPassword" 
+        name="ResetPasswordNormal" 
         component={ResetPasswordScreen} 
         options={{
           headerShown: true,

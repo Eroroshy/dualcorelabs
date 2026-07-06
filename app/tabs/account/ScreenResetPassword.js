@@ -5,9 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { TextInput } from 'react-native-paper';
 
-import { supabase } from '../../subapaseClient';
-// ⚡ Asegúrate de que esta ruta apunte correctamente a tu AuthContext
-import { AuthContext } from '../../context/AuthContext';
+import { AuthContext } from '../../context/AuthContext'; // Verifica tu ruta exacta
+import { supabase } from '../../subapaseClient'; // Verifica tu ruta exacta
 
 const parseParamsFromUrl = async () => {
   const url = await Linking.getInitialURL();
@@ -24,8 +23,8 @@ export default function ScreenResetPassword() {
   const route = useRoute();
   const { t } = useTranslation();
   
-  // ⚡ Traemos la llave de la bóveda desde tu contexto
-  const { setNeedsPasswordReset } = useContext(AuthContext);
+  // ⚡ Extraemos setNeedsPasswordReset y logout de tu bóveda central
+  const { setNeedsPasswordReset, logout } = useContext(AuthContext);
 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -95,11 +94,12 @@ export default function ScreenResetPassword() {
 
       Alert.alert(t('success', 'Éxito'), t('success_password_updated', 'Tu contraseña fue actualizada. Ahora puedes iniciar sesión de nuevo.'));
       
-      // ⚡ 1. Quitamos el candado de seguridad
-      setNeedsPasswordReset(false);
+      // ⚡ 1. Limpiamos la sesión completamente usando tu propia función
+      await logout();
       
-      // ⚡ 2. Cerramos la sesión (Esto lo mandará automáticamente de vuelta al Login normal)
-      await supabase.auth.signOut();
+      // ⚡ 2. Destruimos la bóveda de seguridad. Al no haber sesión, 
+      // React Navigation mandará al usuario directamente al ScreenLogin.
+      setNeedsPasswordReset(false);
       
     } catch (error) {
       Alert.alert(t('error', 'Error'), error.message);
@@ -108,10 +108,10 @@ export default function ScreenResetPassword() {
     }
   };
 
-  // ⚡ Botón de escape seguro
+  // ⚡ Botón de escape seguro por si el usuario se arrepiente
   const handleCancelAndLogout = async () => {
-    setNeedsPasswordReset(false);
-    await supabase.auth.signOut();
+    await logout(); // Limpiamos primero
+    setNeedsPasswordReset(false); // Destruimos la bóveda después
   };
 
   return (
@@ -163,7 +163,7 @@ export default function ScreenResetPassword() {
         </TouchableOpacity>
 
         <TouchableOpacity onPress={handleCancelAndLogout} style={styles.linkButton}>
-          <Text style={styles.linkText}>{t('cancel_and_logout', 'Cancelar y cerrar sesión')}</Text>
+          <Text style={styles.linkText}>{t('cancel_and_logout', 'Cancelar y volver al Login')}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   linkText: {
-    color: '#ff716c', // Puse un color rojizo/salmón para denotar que es una acción de cierre/cancelación
+    color: '#ff716c',
     fontFamily: 'Manrope_600SemiBold',
   },
 });
