@@ -1,5 +1,6 @@
 import { useNavigation, useRoute } from '@react-navigation/native';
 import * as Linking from 'expo-linking';
+import * as Localization from 'expo-localization'; // ✅ Se agregó para detectar el idioma del celular
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -29,7 +30,9 @@ const parseParamsFromUrl = async () => {
 export default function ScreenResetPassword() {
   const navigation = useNavigation();
   const route = useRoute();
-  const { t } = useTranslation();
+  
+  // ✅ Se extrajo 'i18n' para poder cambiar el idioma dinámicamente
+  const { t, i18n } = useTranslation(); 
   
   const { setNeedsPasswordReset, logout } = useContext(AuthContext);
 
@@ -46,6 +49,15 @@ export default function ScreenResetPassword() {
 
     const prepareSession = async () => {
       try {
+        // ✅ 1. Detectar el idioma del celular y aplicarlo automáticamente
+        const deviceLanguage = Localization.getLocales()[0].languageCode; 
+        const supportedLang = deviceLanguage === 'es' ? 'es' : 'en'; 
+        
+        if (i18n.language !== supportedLang) {
+          await i18n.changeLanguage(supportedLang);
+        }
+
+        // 2. Lógica original de supabase
         const mergedParams = { ...(await parseParamsFromUrl()), ...params };
         const accessToken = mergedParams.access_token || mergedParams.accessToken;
         const refreshToken = mergedParams.refresh_token || mergedParams.refreshToken;

@@ -1,5 +1,5 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import AwesomeIcon from "@react-native-vector-icons/material-design-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
 import React, { useContext, useEffect, useState } from "react";
@@ -220,10 +220,10 @@ function AppTabs() {
             tabBarLabel: screen.label,
             tabBarIcon: ({ color, focused }) => (
               <View style={tabStyle(focused)}>
-                <AwesomeIcon 
+                <MaterialCommunityIcons 
                   name={screen.icon} 
                   color={focused && screen.activeColor ? screen.activeColor : color} 
-                  size={22}
+                  size={24}
                 />
               </View>
             ),
@@ -296,7 +296,9 @@ const styles = StyleSheet.create({
 
 const tabStyle = (focused) => ({
   backgroundColor: focused ? "#1d2226" : "transparent",
-  paddingVertical: 5,
-  paddingHorizontal: 12,
+  paddingVertical: 6,
+  paddingHorizontal: 14,
   borderRadius: 12,
+  alignItems: "center",
+  justifyContent: "center",
 });
