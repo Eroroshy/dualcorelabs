@@ -2,15 +2,18 @@ import { useNavigation } from '@react-navigation/native';
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
+import { TextInput } from "react-native-paper";
 
-// Diccionario local estricto para evitar el Spanglish y asegurar el cambio de idioma inmediato
 const TEXTOS_LOCALES = {
   es: {
     tag: "HERRAMIENTAS DE RENDIMIENTO",
@@ -50,11 +53,9 @@ export default function ScreenCalculator() {
   const [reps, setReps] = useState("");
   const [result, setResult] = useState(0);
 
-  // Selecciona el idioma actual del sistema de forma segura
   const idiomaActual = i18n.language?.startsWith('es') ? 'es' : 'en';
   const txt = TEXTOS_LOCALES[idiomaActual];
 
-  // Fórmula de Epley: 1RM = w * (1 + r / 30)
   const calculate1RM = () => {
     const w = parseFloat(weight);
     const r = parseFloat(reps);
@@ -62,80 +63,93 @@ export default function ScreenCalculator() {
     if (r === 1 || r === "1") return setResult(w);
     const oneRM = w * (1 + r / 30);
     setResult(Math.round(oneRM));
+    Keyboard.dismiss(); // Baja el teclado automáticamente al calcular
   };
 
   return (
-    <View style={styles.container}>
-      {/* HEADER CON BOTÓN DE REGRESO ATRÁS */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.backArrow}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>K I N E T I C</Text>
-        <View style={styles.placeholderView} />
-      </View>
-
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-
-        {/* ENCABEZADO DE PANTALLA */}
-        <Text style={styles.tag}>{txt.tag.toUpperCase()}</Text>
-        <Text style={styles.title}>
-          {txt.titulo_1.toUpperCase()}{"\n"}
-          <Text style={styles.highlight}>{txt.titulo_2.toUpperCase()}</Text>
-        </Text>
-
-        <Text style={styles.text}>{txt.descripcion}</Text>
-
-        {/* 🌟 SECCIÓN INFORMATIVA (AHORA EN LA PARTE SUPERIOR) */}
-        <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>{txt.info_titulo}</Text>
-          <Text style={styles.infoText}>{txt.info_descripcion}</Text>
-        </View>
-
-        {/* TARJETA DE FORMULARIO */}
-        <View style={styles.card}>
-          <View style={styles.inputBlock}>
-            <Text style={styles.label}>{txt.peso_label}</Text>
-            <TextInput
-              style={styles.input}
-              keyboardType="numeric"
-              placeholder={txt.peso_placeholder}
-              placeholderTextColor="#555"
-              value={weight}
-              onChangeText={setWeight}
-            />
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.container}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={{ flex: 1 }}>
+          {/* HEADER SE QUEDA FIJO ARRIBA */}
+          <View style={styles.header}>
+            <TouchableOpacity 
+              style={styles.backButton} 
+              onPress={() => navigation.goBack()}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.backArrow}>←</Text>
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>K I N E T I C</Text>
+            <View style={styles.placeholderView} />
           </View>
 
-          <View style={styles.inputBlock}>
-            <Text style={styles.label}>{txt.reps_label}</Text>
-            <TextInput
-              style={styles.input}
-              keyboardType="numeric"
-              placeholder="0"
-              placeholderTextColor="#555"
-              value={reps}
-              onChangeText={setReps}
-            />
-          </View>
+          <ScrollView 
+            contentContainerStyle={styles.content} 
+            showsVerticalScrollIndicator={false}
+          >
+            <Text style={styles.tag}>{txt.tag.toUpperCase()}</Text>
+            <Text style={styles.title}>
+              {txt.titulo_1.toUpperCase()}{"\n"}
+              <Text style={styles.highlight}>{txt.titulo_2.toUpperCase()}</Text>
+            </Text>
 
-          <TouchableOpacity style={styles.button} onPress={calculate1RM} activeOpacity={0.8}>
-            <Text style={styles.buttonText}>{txt.btn_calcular.toUpperCase()}</Text>
-          </TouchableOpacity>
+            <Text style={styles.text}>{txt.descripcion}</Text>
+
+            <View style={styles.infoCard}>
+              <Text style={styles.infoTitle}>{txt.info_titulo}</Text>
+              <Text style={styles.infoText}>{txt.info_descripcion}</Text>
+            </View>
+
+            {/* TARJETA DE FORMULARIO */}
+            <View style={styles.card}>
+              <View style={styles.inputBlock}>
+                <Text style={styles.label}>{txt.peso_label}</Text>
+                <TextInput
+                  style={styles.input}
+                  keyboardType="numeric"
+                  placeholder={txt.peso_placeholder}
+                  placeholderTextColor="#555"
+                  value={weight}
+                  onChangeText={setWeight}
+                  textColor="#fff"
+                  activeUnderlineColor="#88adff"
+                  underlineColor="transparent"
+                />
+              </View>
+
+              <View style={styles.inputBlock}>
+                <Text style={styles.label}>{txt.reps_label}</Text>
+                <TextInput
+                  style={styles.input}
+                  keyboardType="numeric"
+                  placeholder="0"
+                  placeholderTextColor="#555"
+                  value={reps}
+                  onChangeText={setReps}
+                  textColor="#fff"
+                  activeUnderlineColor="#88adff"
+                  underlineColor="transparent"
+                />
+              </View>
+
+              <TouchableOpacity style={styles.button} onPress={calculate1RM} activeOpacity={0.8}>
+                <Text style={styles.buttonText}>{txt.btn_calcular.toUpperCase()}</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* PANEL DE RESULTADO */}
+            <View style={styles.resultCard}>
+              <Text style={styles.resultLabel}>{txt.resultado_label}</Text>
+              <Text style={styles.result}>{result}</Text>
+              <Text style={styles.resultLabel}>{txt.unidad}</Text>
+            </View>
+          </ScrollView>
         </View>
-
-        {/* PANEL DE RESULTADO */}
-        <View style={styles.resultCard}>
-          <Text style={styles.resultLabel}>{txt.resultado_label}</Text>
-          <Text style={styles.result}>{result}</Text>
-          <Text style={styles.resultLabel}>{txt.unidad}</Text>
-        </View>
-
-      </ScrollView>
-    </View>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -148,8 +162,6 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 60,
   },
-  
-  // HEADER AJUSTADO PARA EL BOTÓN DE REGRESAR
   header: {
     marginTop: 40,
     marginBottom: 10,
@@ -175,9 +187,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   placeholderView: {
-    width: 24, // Equilibra el espacio ocupado por la flecha izquierda
+    width: 24,
   },
-
   tag: {
     color: "#88adff",
     fontSize: 14,
@@ -201,8 +212,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     fontFamily: "Manrope_400Regular",
   },
-
-  // TARJETA EXPLICATIVA SUPERIOR
   infoCard: {
     backgroundColor: "#111416",
     padding: 18,
@@ -224,7 +233,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     fontFamily: "Manrope_400Regular",
   },
-
   card: {
     backgroundColor: "#171a1c",
     padding: 24,
@@ -243,9 +251,7 @@ const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: "#232629",
-    color: "#fff",
     borderRadius: 10,
-    padding: 18,
     fontSize: 18,
   },
   button: {
@@ -260,7 +266,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#002052",
   },
-
   resultCard: {
     backgroundColor: "#171a1c",
     padding: 24,

@@ -80,34 +80,40 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ⚡ INTERCEPTOR DE DEEP LINKS MANUAL (Por si Supabase tarda en reaccionar)
+  //  INTERCEPTOR DE DEEP LINKS (PRIORIDAD EN APERTURA EN FRÍO)
   useEffect(() => {
     const processDeepLink = async (url) => {
       if (!url) return;
       
+      console.log("Procesando URL detectada:", url);
       const type = url.match(/type=([^&]+)/)?.[1];
       const accessToken = url.match(/access_token=([^&]+)/)?.[1];
       const refreshToken = url.match(/refresh_token=([^&]+)/)?.[1];
       const parsed = Linking.parse(url);
       const code = parsed.queryParams?.code;
 
+      // Si es un link de recuperación, levantamos la bandera de inmediato
       if (type === 'recovery' || url.includes("reset-password")) {
-        console.log("¡Enlace de recuperación detectado vía URL!");
+        console.log("🚨 ¡Enlace de recuperación confirmado! Forzando pantalla de reseteo.");
         setNeedsPasswordReset(true);
       }
 
       if (accessToken && refreshToken) {
         try {
           await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
-        } catch (error) { console.error("Error link:", error); }
+        } catch (error) { console.error("Error link session:", error); }
       } else if (code) {
         try {
           await supabase.auth.exchangeCodeForSession(code);
-        } catch (error) { console.error("Error código:", error); }
+        } catch (error) { console.error("Error código session:", error); }
       }
     };
     
-    Linking.getInitialURL().then(processDeepLink);
+    // Ejecución inmediata al abrir en frío
+    Linking.getInitialURL().then((url) => {
+      if (url) processDeepLink(url);
+    });
+
     const subscription = Linking.addEventListener('url', ({ url }) => processDeepLink(url));
     return () => subscription.remove();
   }, []);
@@ -116,8 +122,10 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       try {
+        console.log("Evento AuthStateChange:", event);
+        
         if (event === 'PASSWORD_RECOVERY') {
-          console.log("¡Supabase detectó PASSWORD_RECOVERY!");
+          console.log("¡Supabase detectó PASSWORD_RECOVERY oficialmente!");
           setNeedsPasswordReset(true);
         }
 
@@ -130,9 +138,11 @@ export const AuthProvider = ({ children }) => {
       } catch (error) {
         console.error("Error Auth:", error);
       } finally {
+        // Solo quitamos la carga si no estamos esperando un reseteo de contraseña prioritario
         setLoading(false); 
       }
     });
+
     return () => authListener?.subscription?.unsubscribe();
   }, []);
 
@@ -184,6 +194,7 @@ export const AuthProvider = ({ children }) => {
     try {
       await supabase.auth.signOut();
       await AsyncStorage.removeItem('@offline_user_profile');
+      setNeedsPasswordReset(false);
       setUser(null);
     } catch (error) { console.error("Logout error:", error); }
   };

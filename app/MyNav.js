@@ -77,8 +77,7 @@ export function MyNavigation() {
     );
   }
 
-  // 2. ⚡ BÓVEDA DE SEGURIDAD (PRIORIDAD ABSOLUTA)
-  // Si detectamos el link de reseteo, bloqueamos todo lo demás.
+  // 2. ⚡ BÓVEDA DE SEGURIDAD
   if (needsPasswordReset) {
     return <ForceResetStack />;
   }
@@ -93,58 +92,58 @@ export function MyNavigation() {
     );
   }
 
-  // 4. NAVEGACIÓN NORMAL (Logueado o No Logueado)
+  // 4. NAVEGACIÓN NORMAL
   return user ? <AppStack /> : <AuthStack />;
 }
 
-// 🔐 Bóveda Infranqueable (Sin flecha hacia atrás, sin tabs)
+// 🔐 Bóveda Infranqueable (Fondo oscuro por defecto agregado)
 function ForceResetStack() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#0c0e10' } }}>
+    <Stack.Navigator 
+      screenOptions={{ 
+        headerShown: false, 
+        cardStyle: { backgroundColor: '#0c0e10' } 
+      }}
+    >
       <Stack.Screen 
         name="ResetPassword" 
         component={ResetPasswordScreen}
         options={{
           headerShown: true,
           title: 'Cambiar Contraseña',
-          headerStyle: { backgroundColor: '#111416', borderBottomColor: '#24282c', borderBottomWidth: 1 },
+          headerStyle: { backgroundColor: '#111416', borderBottomColor: '#24282c', borderBottomWidth: 1, shadowColor: 'transparent' },
           headerTintColor: '#fff',
           headerTitleStyle: { color: '#fff', fontFamily: 'Lexend_700Bold' },
-          headerLeft: () => null, // 🚀 ELIMINA LA FLECHA EN IOS Y ANDROID
-          gestureEnabled: false, // Evita que en iOS cierren la pantalla deslizando
+          headerLeft: () => null, 
+          gestureEnabled: false, 
         }}
       />
     </Stack.Navigator>
   );
 }
 
-// 🔐 Flujo de Autenticación (No logueado)
+// 🔐 Flujo de Autenticación (Fondo oscuro por defecto agregado)
 function AuthStack() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator screenOptions={{ headerShown: false, cardStyle: { backgroundColor: '#0c0e10' } }}>
       <Stack.Screen name="Login" component={ScreenLogin} />
       <Stack.Screen name="Register" component={ScreenSignUp} />
     </Stack.Navigator>
   );
 }
 
-// 📱 Stack Principal de la Aplicación (Logueado)
+// 📱 Stack Principal de la Aplicación
 function AppStack() {
-  // Nota: Eliminamos el useEffect interceptor de aquí, ahora vive en AuthContext y manda
-  // en la raíz del árbol de navegación.
-  
   return (
     <Stack.Navigator
       initialRouteName="Tabs"
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: '#0c0e10' },
+        cardStyle: { backgroundColor: '#0c0e10' }, // Evita parpadeos blancos globales
       }}
     >
       <Stack.Screen name="Tabs" component={AppTabs} />
       
-      {/* Puedes mantener esta ruta si alguna vez quieres que el usuario 
-          cambie su contraseña desde su perfil (sin el link del correo) */}
       <Stack.Screen 
         name="ResetPasswordNormal" 
         component={ResetPasswordScreen} 
@@ -173,10 +172,11 @@ function AppStack() {
   );
 }
 
-// 📊 Menú de Pestañas Inferiores
+// 📊 Menú de Pestañas Inferiores Responsivo
 function AppTabs() {
   const insets = useSafeAreaInsets();
-  const tabBarBottom = Math.max(insets.bottom, 8) + 8;
+  // Ajuste perfecto responsivo para que no quede volando muy arriba en pantallas sin notch
+  const tabBarBottom = insets.bottom > 0 ? insets.bottom : 12;
   const { t } = useTranslation(); 
   const { user } = useContext(AuthContext);
 
@@ -207,6 +207,8 @@ function AppTabs() {
       screenOptions={{
         ...styles.nav,
         tabBarStyle: [styles.nav.tabBarStyle, { bottom: tabBarBottom }],
+        // Evita que las vistas de las pestañas tengan fondo blanco por debajo
+        sceneContainerStyle: { backgroundColor: '#0c0e10' } 
       }}
     >
       {tabScreens.map((screen) => (
@@ -221,6 +223,7 @@ function AppTabs() {
                 <AwesomeIcon 
                   name={screen.icon} 
                   color={focused && screen.activeColor ? screen.activeColor : color} 
+                  size={22}
                 />
               </View>
             ),
@@ -231,11 +234,26 @@ function AppTabs() {
   );
 }
 
+// 🏋️ Sub-Stack de Ejercicios (Corregido el color de fondo para eliminar la pestaña blanca)
 function StackExercises() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator 
+      screenOptions={{ 
+        headerShown: false,
+        cardStyle: { backgroundColor: '#0c0e10' } // ¡MATA EL FONDO BLANCO EN DETAIL LIBRARY!
+      }}
+    >
       <Stack.Screen name="Library" component={ScreenLibrary} />
-      <Stack.Screen name="Más Detalles" component={DetailLibrary} options={{ headerShown: true }} />
+      <Stack.Screen 
+        name="Más Detalles" 
+        component={DetailLibrary} 
+        options={{ 
+          headerShown: true,
+          headerStyle: { backgroundColor: '#111416', borderBottomColor: '#24282c', borderBottomWidth: 1 },
+          headerTintColor: '#fff',
+          headerTitleStyle: { color: '#fff', fontFamily: 'Lexend_700Bold' },
+        }} 
+      />
     </Stack.Navigator>
   );
 }
@@ -250,29 +268,35 @@ const styles = StyleSheet.create({
   nav: {
     headerShown: false,
     tabBarStyle: {
-      backgroundColor: "#0c0e10",
+      backgroundColor: "#111416", // Un gris muy oscuro texturizado en lugar de negro puro para que contraste con el fondo
       borderTopWidth: 0,
       position: "absolute",
-      left: 12,
-      right: 12,
-      height: 72,
-      paddingBottom: 10,
+      left: 16,
+      right: 16,
+      height: 64,
+      paddingBottom: 8,
       paddingTop: 8,
-      borderRadius: 18,
-      marginHorizontal: 0,
+      borderRadius: 20,
+      elevation: 5, // Sombra sutil en Android
+      shadowColor: "#000", // Sombra sutil en iOS
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 5,
     },
     tabBarActiveTintColor: "#88adff",
     tabBarInactiveTintColor: "#aaabad",
     tabBarLabelStyle: {
-      fontFamily: "Manrope_500Medium",
-      fontSize: 10,
-      letterSpacing: 1,
+      fontFamily: "Manrope_600SemiBold",
+      fontSize: 9,
+      letterSpacing: 0.5,
+      marginTop: 2,
     },
   },
 });
 
 const tabStyle = (focused) => ({
-  backgroundColor: focused ? "#171a1c" : "transparent",
-  padding: 6,
-  borderRadius: 10,
+  backgroundColor: focused ? "#1d2226" : "transparent",
+  paddingVertical: 5,
+  paddingHorizontal: 12,
+  borderRadius: 12,
 });
