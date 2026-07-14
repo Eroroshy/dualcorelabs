@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
     ActivityIndicator,
@@ -13,6 +13,8 @@ import {
 } from "react-native";
 import { Searchbar } from "react-native-paper";
 import { supabase } from "../../subapaseClient";
+
+const ADMIN_FUNCTION = "admin-panel";
 
 const TEXTOS_ADMIN = {
   es: {
@@ -60,7 +62,6 @@ const TEXTOS_ADMIN = {
 export default function ScreenAdmin() {
   const { i18n } = useTranslation();
   const [usuarios, setUsuarios] = useState([]);
-  const [filteredUsuarios, setFilteredUsuarios] = useState([]);
   const [buscar, setBuscar] = useState("");
   const [loading, setLoading] = useState(true);
   const [filtroRol, setFiltroRol] = useState("all"); 
@@ -70,42 +71,36 @@ export default function ScreenAdmin() {
   const txt = TEXTOS_ADMIN[idioma];
 
   useEffect(() => {
-    cargarUsuarios();
-  }, [buscar]);
+    const timer = setTimeout(() => {
+      cargarUsuarios();
+    }, 350);
 
-  useEffect(() => {
-    aplicarFiltros();
-  }, [usuarios, filtroRol]);
+    return () => clearTimeout(timer);
+  }, [buscar, filtroRol]);
 
   const cargarUsuarios = async () => {
     try {
       setLoading(true);
-      let query = supabase
-        .from("perfiles")
-        .select("*")
-        .order("nombre", { ascending: true });
 
-      if (buscar.trim() !== "") {
-        query = query.ilike("nombre", `%${buscar}%`);
-      }
+      const { data, error } = await supabase.functions.invoke(ADMIN_FUNCTION, {
+        body: {
+          action: "list",
+          search: buscar.trim(),
+          role: filtroRol,
+        },
+      });
 
-      const { data, error } = await query;
       if (error) throw error;
-      setUsuarios(data || []);
+      setUsuarios(Array.isArray(data?.users) ? data.users : []);
     } catch (error) {
       console.error("Error cargando usuarios:", error.message);
+      Alert.alert("Error", error.message || "No se pudo cargar el panel admin.");
     } finally {
       setLoading(false);
     }
   };
 
-  const aplicarFiltros = () => {
-    if (filtroRol === "all") {
-      setFilteredUsuarios(usuarios);
-    } else {
-      setFilteredUsuarios(usuarios.filter(u => (u.rol || "user") === filtroRol));
-    }
-  };
+  const filteredUsuarios = useMemo(() => usuarios, [usuarios]);
 
   const handleLogout = () => {
     Alert.alert(
@@ -126,8 +121,8 @@ export default function ScreenAdmin() {
 
   const stats = {
     total: usuarios.length,
-    admins: usuarios.filter(u => u.rol === "admin").length,
-    testers: usuarios.filter(u => u.rol === "tester").length,
+    admins: usuarios.filter(u => u.role === "admin").length,
+    testers: usuarios.filter(u => u.role === "tester").length,
   };
 
   const forzarRestablecimiento = async (email, nombre) => {
@@ -144,7 +139,9 @@ export default function ScreenAdmin() {
           text: idioma === "es" ? "Enviar" : "Send",
           onPress: async () => {
             try {
-              const { error } = await supabase.auth.resetPasswordForEmail(email);
+              const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: "kinetic://reset-password",
+              });
               if (error) throw error;
               Alert.alert("Éxito", "Enlace enviado exitosamente.");
             } catch (err) {
@@ -166,7 +163,13 @@ export default function ScreenAdmin() {
           text: "Confirmar",
           onPress: async () => {
             try {
-              const { error } = await supabase.from("perfiles").update({ rol: nuevoRol }).eq("id", userId);
+              const { error } = await supabase.functions.invoke(ADMIN_FUNCTION, {
+                body: {
+                  action: "update-role",
+                  userId,
+                  role: nuevoRol,
+                },
+              });
               if (error) throw error;
               Alert.alert("Éxito", `Rol actualizado correctamente.`);
               cargarUsuarios();
@@ -191,11 +194,13 @@ export default function ScreenAdmin() {
           style: estaSuspendido ? "default" : "destructive",
           onPress: async () => {
             try {
-              const { error } = await supabase
-                .from("perfiles")
-                .update({ activo: estaSuspendido ? true : false }) 
-                .eq("id", userId);
-
+              const { error } = await supabase.functions.invoke(ADMIN_FUNCTION, {
+                body: {
+                  action: "toggle-active",
+                  userId,
+                  active: estaSuspendido ? true : false,
+                },
+              });
               if (error) throw error;
               Alert.alert("Éxito", `Usuario modificado.`);
               cargarUsuarios();
@@ -219,7 +224,12 @@ export default function ScreenAdmin() {
           style: "destructive",
           onPress: async () => {
             try {
-              const { error } = await supabase.from("perfiles").delete().eq("id", userId);
+              const { error } = await supabase.functions.invoke(ADMIN_FUNCTION, {
+                body: {
+                  action: "delete-user",
+                  userId,
+                },
+              });
               if (error) throw error;
               Alert.alert("Éxito", "Usuario borrado.");
               cargarUsuarios();
@@ -233,15 +243,15 @@ export default function ScreenAdmin() {
   };
 
   const renderUsuario = ({ item }) => {
-    const rolActual = item.rol || "user";
-    const estaBaneado = item.activo === false; 
+    const rolActual = item.role || "user";
+    const estaBaneado = item.active === false; 
     const isExpanded = expandedUser === item.id;
     
     let etiquetaRol = txt.user_label;
     if (rolActual === "admin") etiquetaRol = txt.admin_label;
     if (rolActual === "tester") etiquetaRol = txt.tester_label;
 
-    const userEmail = item.email || item.correo || "Sin correo registrado";
+    const userEmail = item.email || "Sin correo registrado";
 
     return (
       <View style={[styles.userCard, estaBaneado && styles.cardBanned]}>

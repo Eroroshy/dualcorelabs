@@ -9,7 +9,7 @@ import { supabase } from '../../subapaseClient';
 
 export default function ScreenEditProfile() {
   const { t } = useTranslation();
-  const { user, updateUser } = useContext(AuthContext);
+  const { user, updateUser, refreshProfile } = useContext(AuthContext);
   const navigation = useNavigation(); 
   const profile = user?.profile;
 
@@ -49,36 +49,46 @@ export default function ScreenEditProfile() {
 
   const guardarCambios = async () => {
     if (!user?.id) return;
+
+    const payload = {
+      nombre: nombre,
+      edad: parseInt(edad) || null,
+      peso_kg: parseFloat(peso) || null,
+      altura_cm: parseInt(altura) || null,
+      nivel_experiencia: nivel,
+      objetivo: objetivo,
+    };
     
     try {
       setIsSaving(true);
 
-      const { error } = await supabase
+      const { data: updatedRows, error: updateError } = await supabase
         .from("perfiles")
-        .update({
-          nombre: nombre,
-          edad: parseInt(edad) || null,
-          peso_kg: parseFloat(peso) || null,
-          altura_cm: parseInt(altura) || null,
-          nivel_experiencia: nivel,
-          objetivo: objetivo,
-        })
+        .update(payload)
+        .select("*")
         .eq("usuario_id", user.id);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
+
+      if (!updatedRows || updatedRows.length === 0) {
+        const { error: insertError } = await supabase
+          .from("perfiles")
+          .insert({ usuario_id: user.id, ...payload });
+
+        if (insertError) throw insertError;
+      }
 
       // ⚡ CORRECCIÓN DET-06: Incorporamos `...profile` para no borrar la URL de la foto en el estado local
       updateUser({
         profile: {
           ...profile,
-          nombre,
-          edad: parseInt(edad) || null,
-          peso_kg: parseFloat(peso) || null,
-          altura_cm: parseInt(altura) || null,
-          nivel_experiencia: nivel,
-          objetivo,
+          ...payload,
         }
       });
+
+      if (refreshProfile) {
+        await refreshProfile();
+      }
 
       Alert.alert(
         t("success"), 

@@ -1,0 +1,22 @@
+{
+  "version": "1.0.0",
+  "tasks": {
+    "dev": "deno run --allow-all --allow-env --watch index.ts",
+    "test": "deno test --allow-all",
+    "fmt": "deno fmt",
+    "lint": "deno lint",
+    "check": "deno check index.ts"
+  },
+  "lint": {
+    "rules": {
+      "tags": ["recommended"]
+    }
+  },
+  "fmt": {
+    "indentWidth": 2,
+    "lineWidth": 100,
+    "singleQuote": true,
+    "semi": true,
+    "trailingComma": "es5"
+  }
+}

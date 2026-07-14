@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import AwesomeIcon from "@react-native-vector-icons/material-design-icons";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { Image } from "expo-image";
 import { useCallback, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import traducciones from "../../../assets/data/traducciones.json";
 import { AuthContext } from "../../context/AuthContext";
 import i18n from "../../i18n";
@@ -161,7 +162,7 @@ export default function ScreenHome() {
       <View style={styles.welcomeCard}>
         <View style={styles.avatarWrapper}>
           {avatarUrl ? (
-            <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+            <Image source={{ uri: avatarUrl }} style={styles.avatar} contentFit="cover" cachePolicy="memory-disk" transition={200} />
           ) : (
             <View style={styles.avatarPlaceholder}>
               <Ionicons name="person" size={40} color="#747578" />

@@ -1,9 +1,45 @@
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next'; // <-- Hook de traducción
 import { ActivityIndicator, FlatList, Linking, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+
+const GymCard = React.memo(function GymCard({ item, isFavorite, onToggleFavorite, onOpenMaps, t }) {
+    return (
+        <View style={styles.gymCard}>
+            <TouchableOpacity style={styles.gymCardLeft} onPress={() => onOpenMaps(item)}>
+                <MaterialIcons name="fitness-center" size={24} color="#88adff" />
+                <View style={{ marginLeft: 12, flex: 1 }}>
+                    <Text style={styles.gymName} numberOfLines={1}>{item.name}</Text>
+                    <Text style={styles.gymAddress} numberOfLines={1}>{item.address}</Text>
+                    {item.distance && (
+                        <Text style={styles.gymDistanceText}>
+                            {t("distance_away", { distance: item.distance })}
+                        </Text>
+                    )}
+                    {item.phone && (
+                        <Text style={styles.gymPhone}>{item.phone}</Text>
+                    )}
+                </View>
+            </TouchableOpacity>
+
+            <View style={styles.actionsBox}>
+                <TouchableOpacity onPress={() => onToggleFavorite(item)} style={{ padding: 6 }}>
+                    <Ionicons
+                        name={isFavorite ? "heart" : "heart-outline"}
+                        size={24}
+                        color={isFavorite ? "#ff716c" : "#747578"}
+                    />
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.mapsIconButton} onPress={() => onOpenMaps(item)}>
+                    <MaterialIcons name="directions" size={20} color="#0c0e10" />
+                </TouchableOpacity>
+            </View>
+        </View>
+    );
+});
 
 export default function ScreenGym() {
     const { t } = useTranslation(); // Activamos el motor de idiomas
@@ -20,16 +56,36 @@ export default function ScreenGym() {
     useEffect(() => {
         loadFavorites();
         getUserLocation();
-    }, [selectedRadio, search]); 
+    }, []);
 
-    const loadFavorites = async () => {
+    useEffect(() => {
+        if (showFavorites) {
+            setLoading(false);
+            setError(null);
+            return;
+        }
+
+        if (!location?.latitude || !location?.longitude) {
+            return;
+        }
+
+        const timer = setTimeout(() => {
+            fetchNearbyGyms(location.latitude, location.longitude);
+        }, 450);
+
+        return () => clearTimeout(timer);
+    }, [search, selectedRadio, showFavorites, location?.latitude, location?.longitude]);
+
+    const loadFavorites = useCallback(async () => {
         try {
             const stored = await AsyncStorage.getItem("gym_favorites");
             if (stored) setFavorites(JSON.parse(stored));
-        } catch (e) {}
-    };
+        } catch (e) {
+            console.error("Error cargando favoritos:", e);
+        }
+    }, []);
 
-    const toggleFavorite = async (gym) => {
+    const toggleFavorite = useCallback(async (gym) => {
         try {
             const isFav = favorites.some(f => f.place_id === gym.place_id);
             const updated = isFav
@@ -37,12 +93,14 @@ export default function ScreenGym() {
                 : [...favorites, gym];
             setFavorites(updated);
             await AsyncStorage.setItem("gym_favorites", JSON.stringify(updated));
-        } catch (e) {}
-    };
+        } catch (e) {
+            console.error("Error guardando favorito:", e);
+        }
+    }, [favorites]);
 
-    const isFavorite = (gym) => favorites.some(f => f.place_id === gym.place_id);
+    const isFavorite = useCallback((gym) => favorites.some(f => f.place_id === gym.place_id), [favorites]);
 
-    const getUserLocation = async () => {
+    const getUserLocation = useCallback(async () => {
         try {
             setLoading(true);
             setError(null);
@@ -61,10 +119,16 @@ export default function ScreenGym() {
             setError(t("loc_error"));
             setLoading(false);
         }
-    };
+    }, [t, selectedRadio, search]);
 
-    const fetchNearbyGyms = async (lat, lng) => {
-        const apiKey = '38r6oqYIM7Zxp8mhmPnanSfhZkB8QknU';
+    const fetchNearbyGyms = useCallback(async (lat, lng) => {
+        const apiKey = process.env.EXPO_PUBLIC_TOMTOM_API_KEY;
+        if (!apiKey) {
+            setError(t("search_error"));
+            setLoading(false);
+            return;
+        }
+
         let url = "";
 
         if (search.trim().length > 0) {
@@ -99,51 +163,34 @@ export default function ScreenGym() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [search, selectedRadio, t]);
 
-    const openInMaps = (gym) => {
+    const openInMaps = useCallback((gym) => {
         const query = encodeURIComponent(`${gym.name} ${gym.address}`);
         const url = `https://www.google.com/maps/search/?api=1&query=${query}`;
         Linking.openURL(url);
-    };
+    }, []);
 
-    const displayData = showFavorites 
-        ? favorites.filter(gym => gym.name?.toLowerCase().includes(search.toLowerCase())) 
-        : gyms;
+    const displayData = useMemo(() => {
+        if (!showFavorites) {
+            return gyms;
+        }
 
-    const renderGym = ({ item }) => (
-        <View style={styles.gymCard}>
-            <TouchableOpacity style={styles.gymCardLeft} onPress={() => openInMaps(item)}>
-                <MaterialIcons name="fitness-center" size={24} color="#88adff" />
-                <View style={{ marginLeft: 12, flex: 1 }}>
-                    <Text style={styles.gymName} numberOfLines={1}>{item.name}</Text>
-                    <Text style={styles.gymAddress} numberOfLines={1}>{item.address}</Text>
-                    {item.distance && (
-                        <Text style={styles.gymDistanceText}>
-                            {t("distance_away", { distance: item.distance })}
-                        </Text>
-                    )}
-                    {item.phone && (
-                        <Text style={styles.gymPhone}>{item.phone}</Text>
-                    )}
-                </View>
-            </TouchableOpacity>
-            
-            <View style={styles.actionsBox}>
-                <TouchableOpacity onPress={() => toggleFavorite(item)} style={{ padding: 6 }}>
-                    <Ionicons
-                        name={isFavorite(item) ? "heart" : "heart-outline"}
-                        size={24}
-                        color={isFavorite(item) ? "#ff716c" : "#747578"}
-                    />
-                </TouchableOpacity>
+        const searchLower = search.trim().toLowerCase();
+        if (!searchLower) return favorites;
 
-                <TouchableOpacity style={styles.mapsIconButton} onPress={() => openInMaps(item)}>
-                    <MaterialIcons name="directions" size={20} color="#0c0e10" />
-                </TouchableOpacity>
-            </View>
-        </View>
-    );
+        return favorites.filter((gym) => gym.name?.toLowerCase().includes(searchLower));
+    }, [favorites, gyms, search, showFavorites]);
+
+    const renderGym = useCallback(({ item }) => (
+        <GymCard
+            item={item}
+            isFavorite={isFavorite(item)}
+            onToggleFavorite={toggleFavorite}
+            onOpenMaps={openInMaps}
+            t={t}
+        />
+    ), [isFavorite, openInMaps, t, toggleFavorite]);
 
     return (
         <View style={styles.container}>

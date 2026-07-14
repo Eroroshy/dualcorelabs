@@ -1,20 +1,30 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Searchbar } from 'react-native-paper';
 // ⚡ Importación de la librería moderna para renderizar GIFs correctamente
 import { Image } from 'expo-image';
 
+const translationCache = new Map();
+
 // Función para traducir textos individuales en tiempo real
 const traducirAlEspanol = async (texto) => {
   if (!texto) return "";
+  const key = texto.toLowerCase().trim();
+
+  if (translationCache.has(key)) {
+    return translationCache.get(key);
+  }
+
   try {
     const response = await fetch(
       `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=es&dt=t&q=${encodeURIComponent(texto)}`
     );
     const data = await response.json();
-    return data[0][0][0];
+    const traducido = data[0][0][0];
+    translationCache.set(key, traducido);
+    return traducido;
   } catch (error) {
     return texto; 
   }
@@ -54,6 +64,7 @@ export default function ScreenLibrary() {
   const [buscar, setBuscar] = useState("");
   const [loadingTranslation, setLoadingTranslation] = useState(false);
   const [activeFilter, setActiveFilter] = useState('all');
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
@@ -64,6 +75,8 @@ export default function ScreenLibrary() {
   }, [buscar, activeFilter, i18n.language]);
 
   const obtenerEjercicios = async () => {
+    const requestId = ++requestIdRef.current;
+
     try {
       setLoadingTranslation(true);
       let listaOriginal = [];
@@ -122,15 +135,22 @@ export default function ScreenLibrary() {
             return { ...item, name: nombreTraducido };
           })
         );
+
+        if (requestIdRef.current !== requestId) return;
         setEjercicios(listaTraducida);
       } else {
+        if (requestIdRef.current !== requestId) return;
         setEjercicios(listaOriginal);
       }
     } catch (error) {
       console.error("Error general al obtener ejercicios:", error);
-      setEjercicios([]); 
+      if (requestIdRef.current === requestId) {
+        setEjercicios([]);
+      }
     } finally {
-      setLoadingTranslation(false);
+      if (requestIdRef.current === requestId) {
+        setLoadingTranslation(false);
+      }
     }
   };
 
@@ -217,7 +237,7 @@ export default function ScreenLibrary() {
 
       <FlatList
         data={ejerciciosFiltrados} 
-        keyExtractor={(item) => item.exerciseId || item.id || Math.random().toString()}
+        keyExtractor={(item, index) => (item.exerciseId || item.id || `idx-${index}`)}
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}

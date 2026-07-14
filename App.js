@@ -1,7 +1,7 @@
 import { NavigationContainer } from '@react-navigation/native';
 import * as Linking from 'expo-linking';
 import React, { useEffect } from 'react'; // IMPORTANTE: Añadido useEffect
-import { Platform } from 'react-native'; // IMPORTANTE: Añadido Platform
+import { Platform, Text, View } from 'react-native'; // IMPORTANTE: Añadido Platform
 import { PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -11,16 +11,13 @@ import * as Notifications from 'expo-notifications';
 import { MyNavigation } from './app/MyNav';
 import { AuthProvider } from './app/context/AuthContext';
 
-// IMPORTA TU CLIENTE DE SUPABASE
-import { supabase } from './app/subapaseClient';
-
 // FONTS
 import { Lexend_700Bold, Lexend_800ExtraBold } from '@expo-google-fonts/lexend';
 import {
-  Manrope_400Regular,
-  Manrope_500Medium,
-  Manrope_600SemiBold,
-  Manrope_700Bold
+    Manrope_400Regular,
+    Manrope_500Medium,
+    Manrope_600SemiBold,
+    Manrope_700Bold
 } from '@expo-google-fonts/manrope';
 import { useFonts } from 'expo-font';
 
@@ -32,6 +29,44 @@ Notifications.setNotificationHandler({
     shouldSetBadge: false,
   }),
 });
+
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, info) {
+    console.error(error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={{ flex: 1, backgroundColor: '#0c0e10', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+          <Text style={{ color: '#eeeef0', fontFamily: 'Lexend_700Bold', fontSize: 16, textAlign: 'center' }}>
+            Algo salió mal. Reinicia la app.
+          </Text>
+        </View>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+const linking = {
+  prefixes: [Linking.createURL('/'), 'kinetic://'],
+  config: {
+    screens: {
+      ResetPassword: 'reset-password',
+    },
+  },
+};
 
 export default function App() {
 
@@ -79,36 +114,6 @@ export default function App() {
     configurarNotificaciones();
   }, []);
   
-  // CONFIGURACIÓN DE LINKING INTERCEPTANDO LA URL PARA SUPABASE
-  const linking = {
-    prefixes: [Linking.createURL('/'), 'kinetic://'],
-    config: {
-      screens: {
-        ResetPassword: 'reset-password',
-      },
-    },
-    async subscribe(listener) {
-      const onReceiveURL = async ({ url }) => {
-        if (url) {
-          await supabase.auth.setSession(url);
-        }
-        setTimeout(() => listener(url), 0);
-      };
-
-      const subscription = Linking.addEventListener('url', onReceiveURL);
-
-      const initialUrl = await Linking.getInitialURL();
-      if (initialUrl) {
-        await supabase.auth.setSession(initialUrl);
-        setTimeout(() => listener(initialUrl), 0);
-      }
-
-      return () => {
-        subscription.remove();
-      };
-    },
-  };
-
   const [fontsLoaded] = useFonts({
     Lexend_700Bold,
     Lexend_800ExtraBold,
@@ -121,14 +126,16 @@ export default function App() {
   if (!fontsLoaded) return null;
 
   return (
-    <AuthProvider>
-      <SafeAreaProvider>
-        <NavigationContainer linking={linking}>
-          <PaperProvider>
-            <MyNavigation />
-          </PaperProvider>
-        </NavigationContainer>
-      </SafeAreaProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <SafeAreaProvider>
+          <NavigationContainer linking={linking}>
+            <PaperProvider>
+              <MyNavigation />
+            </PaperProvider>
+          </NavigationContainer>
+        </SafeAreaProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
