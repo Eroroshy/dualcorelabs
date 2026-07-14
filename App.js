@@ -1,8 +1,12 @@
 import { NavigationContainer } from '@react-navigation/native';
 import * as Linking from 'expo-linking';
-import React from 'react';
+import React, { useEffect } from 'react'; // IMPORTANTE: Añadido useEffect
+import { Platform } from 'react-native'; // IMPORTANTE: Añadido Platform
 import { PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+// LO NUEVO PARA NOTIFICACIONES
+import * as Notifications from 'expo-notifications';
 
 import { MyNavigation } from './app/MyNav';
 import { AuthProvider } from './app/context/AuthContext';
@@ -20,7 +24,60 @@ import {
 } from '@expo-google-fonts/manrope';
 import { useFonts } from 'expo-font';
 
+// CONFIGURACIÓN: Cómo se comportan las notificaciones si la app está abierta en primer plano
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
+
 export default function App() {
+
+  // EFECTO PARA INICIALIZAR NOTIFICACIONES Y OBTENER TU TOKEN
+  useEffect(() => {
+    async function configurarNotificaciones() {
+      // 1. Solicitar permisos al usuario en el teléfono
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      
+      if (finalStatus !== 'granted') {
+        console.log('¡El usuario rechazó los permisos de notificación!');
+        return;
+      }
+
+      // 2. Configurar obligatoriamente el Canal de Android
+      if (Platform.OS === 'android') {
+        await Notifications.setNotificationChannelAsync('default', {
+          name: 'default',
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: '#FF231F7A',
+        });
+      }
+
+      // 3. Obtener el Token Nativo del APK para meter en la herramienta de Expo
+      // Nota: Reemplaza con tu ProjectID de EAS si usas getExpoPushTokenAsync, 
+      // o usa getDevicePushTokenAsync para FCM directo. Aquí usamos el nativo del dispositivo:
+      try {
+        const tokenData = await Notifications.getDevicePushTokenAsync();
+        console.log("==========================================");
+        console.log("TU TOKEN PARA EL APK ACTUAL:");
+        console.log(tokenData.data);
+        console.log("==========================================");
+      } catch (error) {
+        console.log("Error obteniendo el token:", error);
+      }
+    }
+
+    configurarNotificaciones();
+  }, []);
   
   // CONFIGURACIÓN DE LINKING INTERCEPTANDO LA URL PARA SUPABASE
   const linking = {
@@ -30,25 +87,19 @@ export default function App() {
         ResetPassword: 'reset-password',
       },
     },
-    // Este método escucha la URL del correo, guarda la sesión en Supabase y luego navega
     async subscribe(listener) {
       const onReceiveURL = async ({ url }) => {
         if (url) {
-          // Extrae el token hash de la URL y activa la sesión en caliente
           await supabase.auth.setSession(url);
         }
-        // Retraso sutil para evitar interferencia con cambios de estado inmediatos
         setTimeout(() => listener(url), 0);
       };
 
-      // Listener para cuando la aplicación ya está abierta en segundo plano
       const subscription = Linking.addEventListener('url', onReceiveURL);
 
-      // Revisa si la aplicación se abrió desde cero (cerrada por completo) usando el enlace
       const initialUrl = await Linking.getInitialURL();
       if (initialUrl) {
         await supabase.auth.setSession(initialUrl);
-        // Prioriza la navegación profunda antes de la carga de la ruta inicial nativa
         setTimeout(() => listener(initialUrl), 0);
       }
 

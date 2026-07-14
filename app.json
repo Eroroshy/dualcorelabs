@@ -21,11 +21,13 @@
     },
     "extra": {
       "eas": {
-        "projectId": "a41e1e8a-505d-42de-b1e2-0d44754e7855"
+        "projectId": "785523d7-9fa2-4def-ac10-409639eb1a96"
       }
     },
+    "owner": "epicmatrix",
     "plugins": [
-      "expo-localization"
+      "expo-localization",
+      "expo-notifications"
     ]
   }
 }

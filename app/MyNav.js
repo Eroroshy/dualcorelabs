@@ -1,4 +1,4 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
@@ -35,7 +35,6 @@ export function MyNavigation() {
   const [shouldShowOnboarding, setShouldShowOnboarding] = useState(false);
   const [onboardingStorageKey, setOnboardingStorageKey] = useState(null);
 
-  // Verificar Onboarding
   useEffect(() => {
     let mounted = true;
 
@@ -68,7 +67,6 @@ export function MyNavigation() {
     };
   }, [authLoading, user?.id]);
 
-  // 1. PANTALLA DE CARGA
   if (authLoading || (user && !onboardingReady)) {
     return (
       <View style={styles.loadingScreen}>
@@ -77,12 +75,10 @@ export function MyNavigation() {
     );
   }
 
-  // 2. ⚡ BÓVEDA DE SEGURIDAD
   if (needsPasswordReset) {
     return <ForceResetStack />;
   }
 
-  // 3. ONBOARDING
   if (user && shouldShowOnboarding) {
     return (
       <ScreenOnboarding
@@ -92,11 +88,9 @@ export function MyNavigation() {
     );
   }
 
-  // 4. NAVEGACIÓN NORMAL
   return user ? <AppStack /> : <AuthStack />;
 }
 
-// 🔐 Bóveda Infranqueable (Fondo oscuro por defecto agregado)
 function ForceResetStack() {
   return (
     <Stack.Navigator 
@@ -122,7 +116,6 @@ function ForceResetStack() {
   );
 }
 
-// 🔐 Flujo de Autenticación (Fondo oscuro por defecto agregado)
 function AuthStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false, cardStyle: { backgroundColor: '#0c0e10' } }}>
@@ -132,14 +125,13 @@ function AuthStack() {
   );
 }
 
-// 📱 Stack Principal de la Aplicación
 function AppStack() {
   return (
     <Stack.Navigator
       initialRouteName="Tabs"
       screenOptions={{
         headerShown: false,
-        cardStyle: { backgroundColor: '#0c0e10' }, // Evita parpadeos blancos globales
+        cardStyle: { backgroundColor: '#0c0e10' }, 
       }}
     >
       <Stack.Screen name="Tabs" component={AppTabs} />
@@ -172,34 +164,37 @@ function AppStack() {
   );
 }
 
-// 📊 Menú de Pestañas Inferiores Responsivo
 function AppTabs() {
   const insets = useSafeAreaInsets();
-  // Ajuste perfecto responsivo para que no quede volando muy arriba en pantallas sin notch
   const tabBarBottom = insets.bottom > 0 ? insets.bottom : 12;
   const { t } = useTranslation(); 
   const { user } = useContext(AuthContext);
 
   const rawRole = user?.profile?.rol || 'user';
   const userRole = rawRole.toLowerCase().trim(); 
-  const isAdminOrTester = userRole === 'admin' || userRole === 'tester';
+  const isAdmin = (userRole === 'admin');
 
-  const tabScreens = [
-    { name: "HOME", component: ScreenHome, label: t("tab_home", "HOME"), icon: "view-dashboard" },
-    { name: "LIBRARY", component: StackExercises, label: t("tab_library", "LIBRARY"), icon: "dumbbell" },
-    { name: "PROGRESS", component: ScreenHistory, label: t("tab_progress", "PROGRESS"), icon: "chart-timeline-variant" },
-    { name: "GYMS", component: ScreenGym, label: t("tab_gyms", "GYMS"), icon: "map-marker-radius" },
-    { name: "PROFILE", component: PerfilHome, label: t("tab_profile", "PROFILE"), icon: "account" },
-  ];
+  // Lógica estricta: Si es admin, solo carga 1 pestaña. Si es user/tester, carga las 5.
+  let tabScreens = [];
 
-  if (isAdminOrTester) {
-    tabScreens.push({ 
-      name: "ADMIN", 
-      component: ScreenAdmin, 
-      label: t("tab_admin", "PANEL"), 
-      icon: "shield-account",
-      activeColor: "#ff716c"
-    });
+  if (isAdmin) {
+    tabScreens = [
+      { 
+        name: "ADMIN", 
+        component: ScreenAdmin, 
+        label: t("tab_admin", "PANEL"), 
+        icon: "shield-outline", 
+        activeColor: "#ff716c"
+      }
+    ];
+  } else {
+    tabScreens = [
+      { name: "HOME", component: ScreenHome, label: t("tab_home", "HOME"), icon: "home-outline" },
+      { name: "LIBRARY", component: StackExercises, label: t("tab_library", "LIBRARY"), icon: "library-outline" },
+      { name: "PROGRESS", component: ScreenHistory, label: t("tab_progress", "PROGRESS"), icon: "stats-chart-outline" },
+      { name: "GYMS", component: ScreenGym, label: t("tab_gyms", "GYMS"), icon: "map-outline" },
+      { name: "PROFILE", component: PerfilHome, label: t("tab_profile", "PROFILE"), icon: "person-outline" },
+    ];
   }
 
   return (
@@ -207,7 +202,6 @@ function AppTabs() {
       screenOptions={{
         ...styles.nav,
         tabBarStyle: [styles.nav.tabBarStyle, { bottom: tabBarBottom }],
-        // Evita que las vistas de las pestañas tengan fondo blanco por debajo
         sceneContainerStyle: { backgroundColor: '#0c0e10' } 
       }}
     >
@@ -218,15 +212,11 @@ function AppTabs() {
           component={screen.component}
           options={{
             tabBarLabel: screen.label,
-            tabBarIcon: ({ color, focused }) => (
-              <View style={tabStyle(focused)}>
-                <MaterialCommunityIcons 
-                  name={screen.icon} 
-                  color={focused && screen.activeColor ? screen.activeColor : color} 
-                  size={24}
-                />
-              </View>
-            ),
+            tabBarIcon: ({ color, focused }) => {
+              const iconColor = (focused && screen.activeColor) ? screen.activeColor : color;
+              
+              return <Ionicons name={screen.icon} color={iconColor} size={24} />;
+            },
           }}
         />
       ))}
@@ -234,13 +224,12 @@ function AppTabs() {
   );
 }
 
-// 🏋️ Sub-Stack de Ejercicios (Corregido el color de fondo para eliminar la pestaña blanca)
 function StackExercises() {
   return (
     <Stack.Navigator 
       screenOptions={{ 
         headerShown: false,
-        cardStyle: { backgroundColor: '#0c0e10' } // ¡MATA EL FONDO BLANCO EN DETAIL LIBRARY!
+        cardStyle: { backgroundColor: '#0c0e10' } 
       }}
     >
       <Stack.Screen name="Library" component={ScreenLibrary} />
@@ -268,17 +257,17 @@ const styles = StyleSheet.create({
   nav: {
     headerShown: false,
     tabBarStyle: {
-      backgroundColor: "#111416", // Un gris muy oscuro texturizado en lugar de negro puro para que contraste con el fondo
+      backgroundColor: "#111416", 
       borderTopWidth: 0,
       position: "absolute",
       left: 16,
       right: 16,
-      height: 64,
-      paddingBottom: 8,
-      paddingTop: 8,
+      height: 72,
+      paddingBottom: 10,
+      paddingTop: 10,
       borderRadius: 20,
-      elevation: 5, // Sombra sutil en Android
-      shadowColor: "#000", // Sombra sutil en iOS
+      elevation: 5, 
+      shadowColor: "#000", 
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.3,
       shadowRadius: 5,
@@ -292,13 +281,4 @@ const styles = StyleSheet.create({
       marginTop: 2,
     },
   },
-});
-
-const tabStyle = (focused) => ({
-  backgroundColor: focused ? "#1d2226" : "transparent",
-  paddingVertical: 6,
-  paddingHorizontal: 14,
-  borderRadius: 12,
-  alignItems: "center",
-  justifyContent: "center",
 });

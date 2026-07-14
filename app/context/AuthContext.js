@@ -24,7 +24,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [needsPasswordReset, setNeedsPasswordReset] = useState(false);
 
-  // ⚡ LÓGICA DE NOTIFICACIONES (SILENCIOSA EN ÉXITO)
+  // ⚡ LÓGICA DE NOTIFICACIONES
   const registerForPushNotificationsAsync = async (userId) => {
     try {
       let token;
@@ -65,14 +65,8 @@ export const AuthProvider = ({ children }) => {
             .update({ push_token: token })
             .eq('usuario_id', userId); 
             
-          if (error) {
-              console.error("Error Supabase guardando token:", error.message);
-          } else {
-              console.log("¡Notificaciones Listas! Token guardado en base de datos con éxito.");
-          }
+          if (error) console.error("Error Supabase guardando token:", error.message);
         }
-      } else {
-        console.log('Las notificaciones necesitan dispositivo físico.');
       }
       return token;
     } catch (error) {
@@ -80,21 +74,17 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  //  INTERCEPTOR DE DEEP LINKS (PRIORIDAD EN APERTURA EN FRÍO)
+  // 🔗 INTERCEPTOR DE DEEP LINKS
   useEffect(() => {
     const processDeepLink = async (url) => {
       if (!url) return;
-      
-      console.log("Procesando URL detectada:", url);
       const type = url.match(/type=([^&]+)/)?.[1];
       const accessToken = url.match(/access_token=([^&]+)/)?.[1];
       const refreshToken = url.match(/refresh_token=([^&]+)/)?.[1];
       const parsed = Linking.parse(url);
       const code = parsed.queryParams?.code;
 
-      // Si es un link de recuperación, levantamos la bandera de inmediato
       if (type === 'recovery' || url.includes("reset-password")) {
-        console.log("🚨 ¡Enlace de recuperación confirmado! Forzando pantalla de reseteo.");
         setNeedsPasswordReset(true);
       }
 
@@ -109,7 +99,6 @@ export const AuthProvider = ({ children }) => {
       }
     };
     
-    // Ejecución inmediata al abrir en frío
     Linking.getInitialURL().then((url) => {
       if (url) processDeepLink(url);
     });
@@ -118,16 +107,24 @@ export const AuthProvider = ({ children }) => {
     return () => subscription.remove();
   }, []);
 
-  // ⚡ LISTENER OFICIAL DE SUPABASE
+  // ⚡ INICIALIZACIÓN Y LISTENER DE SUPABASE
   useEffect(() => {
+    // Verificación manual al arrancar la app por si el listener se retrasa
+    const initializeAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await fetchUserProfile(session.user);
+        await registerForPushNotificationsAsync(session.user.id);
+      } else {
+        setLoading(false);
+      }
+    };
+    
+    initializeAuth();
+
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       try {
-        console.log("Evento AuthStateChange:", event);
-        
-        if (event === 'PASSWORD_RECOVERY') {
-          console.log("¡Supabase detectó PASSWORD_RECOVERY oficialmente!");
-          setNeedsPasswordReset(true);
-        }
+        if (event === 'PASSWORD_RECOVERY') setNeedsPasswordReset(true);
 
         if (session) {
           await fetchUserProfile(session.user);
@@ -138,13 +135,20 @@ export const AuthProvider = ({ children }) => {
       } catch (error) {
         console.error("Error Auth:", error);
       } finally {
-        // Solo quitamos la carga si no estamos esperando un reseteo de contraseña prioritario
         setLoading(false); 
       }
     });
 
     return () => authListener?.subscription?.unsubscribe();
   }, []);
+
+  // 🔄 NUEVA FUNCIÓN: Forzar actualización manual del perfil
+  const refreshProfile = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      await fetchUserProfile(session.user);
+    }
+  };
 
   const fetchUserProfile = async (supabaseUser) => {
     try {
@@ -200,7 +204,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, logout, updateUser, updateAvatar, needsPasswordReset, setNeedsPasswordReset }}>
+    // Agregamos refreshProfile a los valores expuestos
+    <AuthContext.Provider value={{ user, loading, logout, updateUser, updateAvatar, needsPasswordReset, setNeedsPasswordReset, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
