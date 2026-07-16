@@ -27,7 +27,7 @@ export default function DetailLibrary({ route }) {
       const result = await response.json();
       const ex = result.data;
 
-      // ⚡ CONDICIÓN MÁGICA: Si el idioma seleccionado es Español, traduce toda la ficha técnica
+      //Si el idioma seleccionado es Español, traduce toda la ficha técnica
       if (i18n.language === 'es') {
         const nombreTraducido = await traducirAlEspanol(ex.name);
         
@@ -61,9 +61,6 @@ export default function DetailLibrary({ route }) {
   if (!ejercicios) {
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>K I N E T I C</Text>
-        </View>
         <View style={styles.loadingcontent}>
           <ActivityIndicator size="large" color="#88adff" />
         </View>
@@ -77,10 +74,6 @@ export default function DetailLibrary({ route }) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>K I N E T I C</Text>
-      </View>
-
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
           

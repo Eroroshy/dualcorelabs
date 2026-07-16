@@ -122,7 +122,7 @@ export default function ScreenGym() {
     }, [t, selectedRadio, search]);
 
     const fetchNearbyGyms = useCallback(async (lat, lng) => {
-        const apiKey = process.env.EXPO_PUBLIC_TOMTOM_API_KEY;
+        const apiKey = process.env.EXPO_PUBLIC_TOMTOM_API_KEY || '38r6oqYIM7Zxp8mhmPnanSfhZkB8QknU';
         if (!apiKey) {
             setError(t("search_error"));
             setLoading(false);

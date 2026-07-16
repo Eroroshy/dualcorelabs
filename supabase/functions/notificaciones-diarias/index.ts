@@ -8,8 +8,8 @@ serve(async (req: Request) => {
   const supabase = createClient(supabaseUrl, supabaseKey)
 
   // 2. Extraer a todos los usuarios que ya tienen un Token guardado
-  const { data: perfiles, error } = await supabase
-    .from('perfiles')
+  const { data: usuarios, error } = await supabase
+    .from('usuarios')
     .select('push_token')
     .not('push_token', 'is', null)
 
@@ -18,7 +18,7 @@ serve(async (req: Request) => {
   }
 
   // 3. Armar los mensajes para Expo
-  const messages = perfiles.map((perfil: any) => ({
+  const messages = usuarios.map((perfil: any) => ({
     to: perfil.push_token,
     sound: 'default',
     title: '¡Es hora de moverte!',

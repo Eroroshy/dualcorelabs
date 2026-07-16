@@ -1,15 +1,15 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    KeyboardAvoidingView,
-    Platform,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from "react-native";
 import { Searchbar } from "react-native-paper";
 import { supabase } from "../../subapaseClient";
@@ -78,27 +78,28 @@ export default function ScreenAdmin() {
     return () => clearTimeout(timer);
   }, [buscar, filtroRol]);
 
-  const cargarUsuarios = async () => {
-    try {
-      setLoading(true);
+const cargarUsuarios = async () => {
+  try {
+    setLoading(true);
 
-      const { data, error } = await supabase.functions.invoke(ADMIN_FUNCTION, {
-        body: {
-          action: "list",
-          search: buscar.trim(),
-          role: filtroRol,
-        },
-      });
+    const { data, error } = await supabase.functions.invoke(ADMIN_FUNCTION, {
+      method: 'POST', // <-- Forzamos explícitamente el método POST
+      body: {
+        action: "list",
+        search: buscar.trim(),
+        role: filtroRol,
+      },
+    });
 
-      if (error) throw error;
-      setUsuarios(Array.isArray(data?.users) ? data.users : []);
-    } catch (error) {
-      console.error("Error cargando usuarios:", error.message);
-      Alert.alert("Error", error.message || "No se pudo cargar el panel admin.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    if (error) throw error;
+    setUsuarios(Array.isArray(data?.users) ? data.users : []);
+  } catch (error) {
+    console.error("Error cargando usuarios:", error.message);
+    Alert.alert("Error", error.message || "No se pudo cargar el panel admin.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   const filteredUsuarios = useMemo(() => usuarios, [usuarios]);
 
@@ -278,61 +279,66 @@ export default function ScreenAdmin() {
         </TouchableOpacity>
 
         {isExpanded && (
-          <View style={styles.expandedContent}>
-            <View style={styles.dividerLine} />
-            
-            <Text style={styles.detailsText}>ASIGNAR ROL:</Text>
-            <View style={styles.actionsGrid}>
-              <TouchableOpacity 
-                style={[styles.actionBtn, rolActual === 'user' ? styles.btnRoleActive : styles.btnOutline]} 
-                onPress={() => asignarRol(item.id, 'user', item.nombre)}
-              >
-                <Text style={rolActual === 'user' ? styles.textRoleActive : styles.textHighlight}>{txt.user_label}</Text>
-              </TouchableOpacity>
+  <View style={styles.expandedContent}>
+    <View style={styles.dividerLine} />
+    
+    <Text style={styles.detailsText}>ASIGNAR ROL:</Text>
+    <View style={styles.actionsGrid}>
+      <TouchableOpacity 
+        style={[styles.actionBtn, rolActual === 'user' ? styles.btnRoleActive : styles.btnOutline]} 
+        // CAMBIADO: item.userId en lugar de item.id
+        onPress={() => asignarRol(item.userId, 'user', item.nombre)} 
+      >
+        <Text style={rolActual === 'user' ? styles.textRoleActive : styles.textHighlight}>{txt.user_label}</Text>
+      </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={[styles.actionBtn, rolActual === 'tester' ? styles.btnRoleActive : styles.btnOutline]} 
-                onPress={() => asignarRol(item.id, 'tester', item.nombre)}
-              >
-                <Text style={rolActual === 'tester' ? styles.textRoleActive : styles.textHighlight}>{txt.tester_label}</Text>
-              </TouchableOpacity>
+      <TouchableOpacity 
+        style={[styles.actionBtn, rolActual === 'tester' ? styles.btnRoleActive : styles.btnOutline]} 
+        // CAMBIADO: item.userId en lugar de item.id
+        onPress={() => asignarRol(item.userId, 'tester', item.nombre)}
+      >
+        <Text style={rolActual === 'tester' ? styles.textRoleActive : styles.textHighlight}>{txt.tester_label}</Text>
+      </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={[styles.actionBtn, rolActual === 'admin' ? styles.btnRoleActive : styles.btnOutline]} 
-                onPress={() => asignarRol(item.id, 'admin', item.nombre)}
-              >
-                <Text style={rolActual === 'admin' ? styles.textRoleActive : styles.textHighlight}>{txt.admin_label}</Text>
-              </TouchableOpacity>
-            </View>
+      <TouchableOpacity 
+        style={[styles.actionBtn, rolActual === 'admin' ? styles.btnRoleActive : styles.btnOutline]} 
+        // CAMBIADO: item.userId en lugar de item.id
+        onPress={() => asignarRol(item.userId, 'admin', item.nombre)}
+      >
+        <Text style={rolActual === 'admin' ? styles.textRoleActive : styles.textHighlight}>{txt.admin_label}</Text>
+      </TouchableOpacity>
+    </View>
 
-            <View style={styles.dividerLine} />
+    <View style={styles.dividerLine} />
 
-            <View style={styles.actionsGrid}>
-              <TouchableOpacity 
-                style={styles.actionBtn} 
-                onPress={() => forzarRestablecimiento(item.email || item.correo, item.nombre)}
-              >
-                <Text style={styles.actionBtnText}>{txt.accion_pass}</Text>
-              </TouchableOpacity>
+    <View style={styles.actionsGrid}>
+      <TouchableOpacity 
+        style={styles.actionBtn} 
+        onPress={() => forzarRestablecimiento(item.email || item.correo, item.nombre)}
+      >
+        <Text style={styles.actionBtnText}>{txt.accion_pass}</Text>
+      </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={[styles.actionBtn, estaBaneado ? styles.btnSuccess : styles.btnWarning]} 
-                onPress={() => toggleSuspensionUsuario(item.id, estaBaneado, item.nombre)}
-              >
-                <Text style={estaBaneado ? styles.btnSuccessText : styles.btnWarningText}>
-                  {estaBaneado ? txt.accion_unban : txt.accion_ban}
-                </Text>
-              </TouchableOpacity>
+      <TouchableOpacity 
+        style={[styles.actionBtn, estaBaneado ? styles.btnSuccess : styles.btnWarning]} 
+        // CAMBIADO: item.userId en lugar de item.id
+        onPress={() => toggleSuspensionUsuario(item.userId, estaBaneado, item.nombre)}
+      >
+        <Text style={estaBaneado ? styles.btnSuccessText : styles.btnWarningText}>
+          {estaBaneado ? txt.accion_unban : txt.accion_ban}
+        </Text>
+      </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={[styles.actionBtn, styles.btnDanger]} 
-                onPress={() => eliminarUsuario(item.id, item.nombre)}
-              >
-                <Text style={styles.btnDangerText}>{txt.accion_eliminar}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
+      <TouchableOpacity 
+        style={[styles.actionBtn, styles.btnDanger]} 
+        // CAMBIADO: item.userId en lugar de item.id
+        onPress={() => eliminarUsuario(item.userId, item.nombre)}
+      >
+        <Text style={styles.btnDangerText}>{txt.accion_eliminar}</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+)}
       </View>
     );
   };

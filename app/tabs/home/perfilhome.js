@@ -74,7 +74,7 @@ export default function ProfileScreen() {
   const [newPassword, setNewPassword] = useState("");
   const [isUpdatingPwd, setIsUpdatingPwd] = useState(false);
 
-  // ⚡ NUEVO: EFECTO PARA ABRIR EL MODAL AUTOMÁTICAMENTE
+
   useEffect(() => {
     if (needsPasswordReset) {
       setModalVisible(true);
@@ -261,7 +261,6 @@ export default function ProfileScreen() {
                 <Text style={styles.rowSubtitle}>{t("alerts_milestones", "Alerts and reminders")}</Text>
               </View>
             </View>
-            {/* ⚡ Aquí inyectamos el nuevo Switch inteligente */}
             <NotificationSwitch t={t} />
           </View>
 
@@ -344,8 +343,8 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0c0e10" },
-  header: { paddingTop: 45, paddingBottom: 15, backgroundColor: "#111416", alignItems: "center", borderBottomWidth: 1, borderBottomColor: "#171a1c" },
-  headerTitle: { fontFamily: "Lexend_800ExtraBold", fontSize: 16, color: "#eeeef0", letterSpacing: 2 },
+  header: { marginTop: 40, padding: 16, backgroundColor: "#111416", alignItems: "center" },
+  headerTitle: { fontFamily: "Lexend_800ExtraBold", fontSize: 18, color: "#eeeef0" },
   scrollContent: { padding: 16, paddingBottom: 140 }, 
   profileSection: { alignItems: "center", marginBottom: 12, marginTop: 15 },
   avatarContainer: { position: "relative", width: 130, height: 130 },

@@ -63,7 +63,7 @@ export default function ScreenEditProfile() {
       setIsSaving(true);
 
       const { data: updatedRows, error: updateError } = await supabase
-        .from("perfiles")
+        .from("usuarios")
         .update(payload)
         .select("*")
         .eq("usuario_id", user.id);
@@ -72,13 +72,13 @@ export default function ScreenEditProfile() {
 
       if (!updatedRows || updatedRows.length === 0) {
         const { error: insertError } = await supabase
-          .from("perfiles")
+          .from("usuarios")
           .insert({ usuario_id: user.id, ...payload });
 
         if (insertError) throw insertError;
       }
 
-      // ⚡ CORRECCIÓN DET-06: Incorporamos `...profile` para no borrar la URL de la foto en el estado local
+      //CORRECCIÓN DET-06: Incorporamos `...profile` para no borrar la URL de la foto en el estado local
       updateUser({
         profile: {
           ...profile,

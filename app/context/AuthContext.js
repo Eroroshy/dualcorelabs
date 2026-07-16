@@ -6,7 +6,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Linking from 'expo-linking';
 import * as Notifications from 'expo-notifications';
 import React, { createContext, useEffect, useState } from "react";
-import { Alert, Platform } from 'react-native';
+import { Platform } from 'react-native';
 import { supabase } from "../subapaseClient";
 
 Notifications.setNotificationHandler({
@@ -24,7 +24,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [needsPasswordReset, setNeedsPasswordReset] = useState(false);
 
-  // ⚡ LÓGICA DE NOTIFICACIONES
+  // 🔔 NOTIFICACIONES PUSH
   const registerForPushNotificationsAsync = async (userId) => {
     try {
       let token;
@@ -46,13 +46,13 @@ export const AuthProvider = ({ children }) => {
         }
         
         if (finalStatus !== 'granted') {
-          Alert.alert("Aviso Notificaciones", "Permiso denegado. Actívalas en ajustes del celular.");
+          console.log("Permiso de notificaciones denegado.");
           return;
         }
         
         const projectId = Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
         if (!projectId) {
-            Alert.alert("Error Crítico", "Falta el projectId de EAS. Revisa tu app.json");
+            console.error("Falta el projectId de EAS.");
             return;
         }
 
@@ -60,12 +60,13 @@ export const AuthProvider = ({ children }) => {
         token = tokenData.data;
         
         if (token && userId) {
+          // 🚀 BUSCA EN 'usuario_id' SEGÚN TU TABLA
           const { error } = await supabase
-            .from('perfiles')
+            .from('usuarios')
             .update({ push_token: token })
             .eq('usuario_id', userId); 
             
-          if (error) console.error("Error Supabase guardando token:", error.message);
+          if (error) console.error("Error guardando token:", error.message);
         }
       }
       return token;
@@ -74,7 +75,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // 🔗 INTERCEPTOR DE DEEP LINKS
+  // 🔗 DEEP LINKS
   useEffect(() => {
     const processDeepLink = async (url) => {
       if (!url) return;
@@ -107,9 +108,8 @@ export const AuthProvider = ({ children }) => {
     return () => subscription.remove();
   }, []);
 
-  // ⚡ INICIALIZACIÓN Y LISTENER DE SUPABASE
+  // ⚡ INICIALIZACIÓN DE SESIÓN
   useEffect(() => {
-    // Verificación manual al arrancar la app por si el listener se retrasa
     const initializeAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
@@ -142,7 +142,6 @@ export const AuthProvider = ({ children }) => {
     return () => authListener?.subscription?.unsubscribe();
   }, []);
 
-  // 🔄 NUEVA FUNCIÓN: Forzar actualización manual del perfil
   const refreshProfile = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
@@ -150,14 +149,31 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // 🔍 OBTENER EL PERFIL
   const fetchUserProfile = async (supabaseUser) => {
     try {
-      const { data: profile, error } = await supabase.from("perfiles").select("*").eq("usuario_id", supabaseUser.id).single();
+      // 🚀 CORREGIDO: Buscamos por 'usuario_id' que conecta con el id de Auth
+      const { data: profile, error } = await supabase
+        .from("usuarios")
+        .select("*")
+        .eq("usuario_id", supabaseUser.id)
+        .single();
+      
+      console.log("Datos del perfil obtenidos:", profile);
+      
       if (error && error.code !== "PGRST116") throw error; 
-      const finalUser = { id: supabaseUser.id, email: supabaseUser.email, user_metadata: supabaseUser.user_metadata, profile: profile || null };
+      
+      const finalUser = { 
+        id: supabaseUser.id, 
+        email: supabaseUser.email, 
+        user_metadata: supabaseUser.user_metadata, 
+        profile: profile || null 
+      };
+      
       await AsyncStorage.setItem('@offline_user_profile', JSON.stringify(finalUser));
       setUser(finalUser);
     } catch (err) {
+      console.error("Error en fetchUserProfile:", err.message);
       const cachedData = await AsyncStorage.getItem('@offline_user_profile');
       if (cachedData) setUser(JSON.parse(cachedData));
       else setUser({ id: supabaseUser.id, email: supabaseUser.email, user_metadata: supabaseUser.user_metadata, profile: null });
@@ -173,6 +189,7 @@ export const AuthProvider = ({ children }) => {
     });
   };
 
+  // 📷 ACTUALIZAR AVATAR
   const updateAvatar = async (imageUri) => {
     try {
       const userId = user?.id;
@@ -186,7 +203,13 @@ export const AuthProvider = ({ children }) => {
       if (uploadError) throw uploadError;
 
       const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(fileName);
-      const { error: profileError } = await supabase.from("perfiles").update({ foto_url: urlData.publicUrl }).eq("usuario_id", userId);
+      
+      // 🚀 CORREGIDO: Buscamos por 'usuario_id'
+      const { error: profileError } = await supabase
+        .from("usuarios")
+        .update({ foto_url: urlData.publicUrl })
+        .eq("usuario_id", userId);
+        
       if (profileError) throw profileError;
 
       updateUser({ profile: { foto_url: urlData.publicUrl } });
@@ -204,7 +227,6 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    // Agregamos refreshProfile a los valores expuestos
     <AuthContext.Provider value={{ user, loading, logout, updateUser, updateAvatar, needsPasswordReset, setNeedsPasswordReset, refreshProfile }}>
       {children}
     </AuthContext.Provider>
